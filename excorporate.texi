@@ -1,0 +1,146 @@
+\input texinfo
+@setfilename excorporate.info
+@settitle Excorporate Manual
+
+@dircategory Emacs
+@direntry
+* Excorporate: (excorporate).  Exchange Web Services integration for Emacs.
+@end direntry
+
+@copying
+Copyright @copyright{} 2016 Free Software Foundation, Inc.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.2 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover, or Back-Cover Texts.  A copy of
+the license is included in the section entitled ``GNU Free Documentation
+License'' in the Emacs manual.
+
+This document is part of a collection distributed under the GNU Free
+Documentation License.  If you want to distribute this document
+separately from the collection, you can do so by adding a copy of the
+license to the document, as described in section 6 of the license.
+
+All Emacs Lisp code contained in this document may be used, distributed,
+and modified without restriction.
+@end quotation
+@end copying
+
+@titlepage
+@title Excorporate Manual
+@author Thomas Fitzsimmons
+@page
+@insertcopying
+@end titlepage
+
+@contents
+
+@node Top
+@top Excorporate Manual
+
+Excorporate provides Exchange Web Services (EWS) support for Emacs.
+
+If the Exchange server you access is configured to provide EWS
+support, then there's a 76% chance that Excorporate will enable you to
+retrieve your calendar entries from the comfort of Emacs.
+
+The 24% failure rate is because accessing -- in particular,
+authenticating against -- an Exchange server can be challenging.
+
+Known to fail are Kerberos/GSSAPI authentication and accessing the
+server through a proxy
+(@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10}).
+
+Patches are welcome to enable more of these access scenarios.
+
+@menu
+* Installation::                Getting and installing @code{excorporate}.
+* Configuration::               Configuring @code{excorporate}.
+* Usage::                       Using @code{excorporate}.
+* Troubleshooting::             Debugging why a connection failed
+@end menu
+
+@node Installation
+@chapter Installation
+
+Excorporate works on Emacs versions >= 24.1.
+
+@noindent
+Install @code{excorporate} from the GNU ELPA repository:
+
+@code{M-x package-install RET excorporate}
+
+@node Configuration
+@chapter Configuration
+
+Ideally you won't need to configure Excorporate at all.  On friendly
+Exchange setups, Excorporate can discover the EWS URL automatically.
+
+@noindent
+First try:
+
+@code{M-x excorporate}
+
+@noindent
+which will prompt you for the Exchange account email address.  Follow
+the prompts and if all goes well, you'll see a message in the
+minibuffer or in *Messages* saying that the connection is ready.
+
+If autodiscovery runs out of URLs to try, then customize
+@code{excorporate-configuration}:
+
+@code{M-x customize-variable RET excorporate-configuration}
+
+From the value menu select ``Skip autodiscovery''.  This allows you to
+enter the Exchange account email address and the EWS URL directly.
+The EWS URL is of the form
+@code{https://mail.gnu.org/ews/exchange.asmx}.
+
+After saving the configuration, try @code{M-x excorporate} again.
+
+If that doesn't work, then you're probably out of luck, or you'll have
+to start a troubleshooting deep dive (@pxref{Troubleshooting}).
+
+@node Usage
+@chapter Usage
+
+Excorporate binds `e' in @code{*Calendar*} buffers.  Open the calendar
+with:
+
+@code{M-x calendar}
+
+@noindent
+move the cursor to the date you want to see meetings for, and press
+`e'.  This will show the meetings in a temporary read-only Org Mode
+buffer named @code{*Excorporate*}.
+
+@node Troubleshooting
+@chapter Troubleshooting
+
+First, you'll want to double-check that the Exchange server you're
+trying to access provides EWS support.  If it doesn't, Excorporate
+can't do anything for you.  Before asking your Exchange administrator,
+check intranet wikis and so forth; other users of non-standard clients
+may have already found the EWS URL.
+
+The buffer @code{*fsm-debug*} shows @code{excorporate} state
+transitions and should provide details of where things went wrong.
+
+Also check @code{*Messages*} for anything obvious.
+
+If you suspect something wrong with accessing the EWS URL, try setting
+@code{url-debug} to t and retry @code{M-x excorporate}, then check the
+@code{*URL-DEBUG*} buffer for output.
+
+If you suspect NTLM authentication is failing, as a long shot, you
+might try setting @code{ntlm-compatibility-level} to 0 and retrying
+@code{M-x excorporate}.
+
+Excorporate's dependencies implement the tricky elements of
+asynchronous Exchange access: a state machine (@code{fsm}), TLS
+negotiation (@code{gnutls}), NTLM authentication (@code{ntlm} and
+@code{url-http-ntlm}) and SOAP communication (@code{soap-client}).
+
+@bye
