@@ -649,7 +649,9 @@ OPTIONAL-INVITEES, a list of strings representing optional participants."
 				   end 'dateTime)))
 	     (location (cdr (assoc 'Location calendar-item)))
 	     (to-invitees (cdr (assoc 'DisplayTo calendar-item)))
-	     (main-invitees (mapcar 'org-trim (split-string to-invitees ";")))
+	     (main-invitees (when to-invitees
+			      (mapcar 'org-trim
+				      (split-string to-invitees ";"))))
 	     (cc-invitees (cdr (assoc 'DisplayCc calendar-item)))
 	     (optional-invitees (when cc-invitees
 				  (mapcar 'org-trim

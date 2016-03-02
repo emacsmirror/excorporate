@@ -61,10 +61,10 @@ are the requested participants."
     (make-cfw:event :title (concat
 			    (format "\n\t%s" subject)
 			    (format "\n\tLocation: %s" location)
-			    (format "\n\tInvitees: %s"
-				    (mapconcat 'identity
-					       main-invitees
-					       "; "))
+			    (when main-invitees
+			      (format "\n\tInvitees: %s"
+				      (mapconcat 'identity
+						 main-invitees "; ")))
 			    (when optional-invitees
 			      (format "\n\tOptional: %s"
 				      (mapconcat 'identity

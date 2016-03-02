@@ -88,8 +88,9 @@ are the requested participants."
   (insert (format "+ Duration: %d minutes\n"
 		  (round (/ (float-time (time-subtract end start)) 60.0))))
   (insert (format "+ Location: %s\n" location))
-  (insert "+ Invitees:\n")
-  (exco-org-insert-invitees main-invitees)
+  (when main-invitees
+    (insert "+ Invitees:\n")
+    (exco-org-insert-invitees main-invitees))
   (when optional-invitees
     (insert "+ Optional invitees:\n")
     (exco-org-insert-invitees optional-invitees)))
