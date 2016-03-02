@@ -451,8 +451,10 @@ the FSM should transition to on success."
     (:unrecoverable-error
      (list :shutting-down-on-error state-data nil))
     (:retrieve-xml
-     (let ((service-url (plist-get state-data :service-url)))
-       (url-retrieve (concat service-url "?wsdl")
+     (let* ((service-url (plist-get state-data :service-url))
+	    (wsdl-url (replace-regexp-in-string "/[^/]*$" "/Services.wsdl"
+						service-url)))
+       (url-retrieve wsdl-url
 		     (lambda (status)
 		       (let ((data-buffer (current-buffer)))
 			 (unwind-protect
@@ -460,7 +462,7 @@ the FSM should transition to on success."
 				 (progn
 				   (plist-put state-data :failure-message
 					      (format "Failed to retrieve %s"
-						      service-url))
+						      wsdl-url))
 				   (fsm-send fsm :unrecoverable-error))
 			       (plist-put state-data
 					  :service-xml
