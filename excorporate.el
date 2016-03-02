@@ -497,18 +497,27 @@ the FSM should transition to on success."
 
 (defun exco--get-server-version (wsdl)
   "Extract server version from WSDL."
-  (catch 'found
-    (dolist (attribute
-	     (soap-xs-type-attributes
-	      (soap-xs-element-type
-	       (soap-wsdl-get
-		'("http://schemas.microsoft.com/exchange/services/2006/types"
-		  . "RequestServerVersion")
-		wsdl 'soap-xs-element-p))))
-      (when (equal (soap-xs-attribute-name attribute) "Version")
-	(throw 'found (soap-xs-attribute-default attribute))))
-    (warn "Excorporate: Failed to determine server version")
-    nil))
+  (let ((warning-message "Excorporate: Failed to determine server version")
+	(namespace "http://schemas.microsoft.com/exchange/services/2006/types")
+	(name "RequestServerVersion")
+	(found-version nil))
+    (unwind-protect
+	(setq found-version
+	      (catch 'found
+		(dolist (attribute
+			 (soap-xs-type-attributes
+			  (soap-xs-element-type (soap-wsdl-get
+						 `(,namespace . ,name)
+						 wsdl 'soap-xs-element-p))))
+		  (when (equal (soap-xs-attribute-name attribute) "Version")
+		    (throw 'found (car (soap-xs-simple-type-enumeration
+					(soap-xs-attribute-type attribute))))))
+		(warn warning-message)
+		nil))
+      (if found-version
+	  found-version
+	(warn warning-message)
+	nil))))
 
 (define-enter-state exco--fsm :retrieving-data
   (_fsm state-data)
