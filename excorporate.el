@@ -96,6 +96,9 @@
 ;; Wilfred Hughes <me@wilfred.me.uk> tested on Exchange 2007 and
 ;; suggested documentation improvements.
 
+;; Erik Hetzner <egh@e6h.org> tested on Office 365 and helped debug
+;; Office 365 support.
+
 ;;; Code:
 
 ;; Implementation-visible functions and variables.
