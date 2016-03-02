@@ -708,7 +708,12 @@ arguments, IDENTIFIER and the server's response."
      identifier
      "FindItem"
      `(;; Main arguments.
-       ((Traversal . "Shallow")
+       (;; RequestVersion is usually overridden by a fixed value in
+	;; the WSDL (the RequestServerVersion element); provide the
+	;; maximally-compatible Exchange2007 if the fixed value isn't
+	;; present.
+	(RequestVersion (Version . "Exchange2007"))
+	(Traversal . "Shallow")
 	(ItemShape
 	 (BaseShape . "AllProperties"))
 	;; To aid productivity, excorporate-calfw automatically prunes your
@@ -719,16 +724,13 @@ arguments, IDENTIFIER and the server's response."
 	(ParentFolderIds
 	 (DistinguishedFolderId (Id . "calendar"))))
        ;; Empty arguments.
-       ,@(let ((server-major-version
-		(string-to-number
-		 (substring (exco-server-version identifier) 8 12))))
-	   (cond
-	    ((<= server-major-version 2007)
-	     '(nil nil nil nil))
-	    ((< server-major-version 2013)
-	     '(nil nil nil nil nil))
-	    (t
-	     '(nil nil nil nil nil nil)))))
+       ,@(let* ((wsdl (exco--with-fsm identifier
+				      (plist-get (fsm-get-state-data fsm)
+						 :service-wsdl)))
+		(arity (soap-operation-arity wsdl
+					    "ExchangeServicePort"
+					    "FindItem")))
+	   (make-list (- arity 1) nil)))
      callback)))
 
 (defun exco-connection-iterate (initialize-function
