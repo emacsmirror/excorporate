@@ -60,6 +60,7 @@ Patches are welcome to enable more of these access scenarios.
 * Configuration::               Configuring @code{excorporate}.
 * Usage::                       Using @code{excorporate}.
 * Troubleshooting::             Debugging why a connection failed
+* Reporting Bugs::              Reporting bugs
 @end menu
 
 @node Installation
@@ -75,6 +76,7 @@ Install @code{excorporate} from the GNU ELPA repository:
 @node Configuration
 @chapter Configuration
 
+@noindent
 Ideally you won't need to configure Excorporate at all.  On friendly
 Exchange setups, Excorporate can discover the EWS URL automatically.
 
@@ -88,24 +90,29 @@ which will prompt you for the Exchange account email address.  Follow
 the prompts and if all goes well, you'll see a message in the
 minibuffer or in *Messages* saying that the connection is ready.
 
+@noindent
 If autodiscovery runs out of URLs to try, then customize
 @code{excorporate-configuration}:
 
 @code{M-x customize-variable RET excorporate-configuration}
 
+@noindent
 From the value menu select ``Skip autodiscovery''.  This allows you to
 enter the Exchange account email address and the EWS URL directly.
 The EWS URL is of the form
 @code{https://mail.gnu.org/ews/exchange.asmx}.
 
+@noindent
 After saving the configuration, try @code{M-x excorporate} again.
 
+@noindent
 If that doesn't work, then you're probably out of luck, or you'll have
 to start a troubleshooting deep dive (@pxref{Troubleshooting}).
 
 @node Usage
 @chapter Usage
 
+@noindent
 Excorporate binds `e' in @code{*Calendar*} buffers.  Open the calendar
 with:
 
@@ -119,28 +126,108 @@ buffer named @code{*Excorporate*}.
 @node Troubleshooting
 @chapter Troubleshooting
 
+@noindent
 First, you'll want to double-check that the Exchange server you're
 trying to access provides EWS support.  If it doesn't, Excorporate
 can't do anything for you.  Before asking your Exchange administrator,
 check intranet wikis and so forth; other users of non-standard clients
-may have already found the EWS URL.
+may have already found the EWS URL.  This is called the ``EWS
+endpoint''.  I can be as simple as something like:
 
+@code{https://mail.gnu.org/ews/exchange.asmx}
+
+@noindent
+First you need to make sure you can access the endpoint.
+
+@noindent
+For Exchange Web Services (EWS) which Excorporate uses, you'll have to
+determine the EWS endpoint for your Exchange account, call it
+@code{ews-url}.  It is usually something like:
+
+   https://<mail host name>/ews/exchange.asmx
+
+@noindent
+Excorporate calculates the WSDL URL, call it @code{wsdl-url}, by
+replacing the endpoint's last path element with ``Services.wsdl'':
+
+   https://<mail host name>/ews/Services.wsdl
+
+@noindent
+Before even attempting Excorporate, you have to make these succeed:
+
+@example
+(with-current-buffer
+ (url-retrieve-synchronously ews-url)
+ (buffer-string))
+@end example
+
+@noindent
+When this works, you'll see web page text in *Messages*, containing a
+message about having created a service.
+
+@example
+(with-current-buffer
+ (url-retrieve-synchronously wsdl-url)
+ (buffer-string))
+@end example
+
+@noindent
+When this works, it will show a bunch of WSDL (XML) in *Messages*.
+
+@noindent
+Debug the above URL retrievals with (setq url-debug t), and with this
+patch:
+
+@example
+diff --git a/lisp/url/url-http.el b/lisp/url/url-http.el
+index d49e527..0f1c8ae 100644
+--- a/lisp/url/url-http.el
++++ b/lisp/url/url-http.el
+@@ -869,6 +869,7 @@ url-http-parse-headers
+       (url-handle-content-transfer-encoding))
+     (url-http-debug "Finished parsing HTTP headers: %S" success)
+     (widen)
++    (url-http-debug "Response: %s" (buffer-string))
+     (goto-char (point-min))
+     success))
+
+@end example
+
+@noindent
+(Beware that HTTP responses are out-of-order with this patch.)
+
+@noindent
+Once you're sure the above steps are working, try @code{M-x
+excorporate}.
+
+@noindent
 The buffer @code{*fsm-debug*} shows @code{excorporate} state
 transitions and should provide details of where things went wrong.
 
+@noindent
 Also check @code{*Messages*} for anything obvious.
 
+@noindent
 If you suspect something wrong with accessing the EWS URL, try setting
 @code{url-debug} to t and retry @code{M-x excorporate}, then check the
 @code{*URL-DEBUG*} buffer for output.
 
+@noindent
 If you suspect NTLM authentication is failing, as a long shot, you
 might try setting @code{ntlm-compatibility-level} to 0 and retrying
 @code{M-x excorporate}.
 
+@noindent
 Excorporate's dependencies implement the tricky elements of
 asynchronous Exchange access: a state machine (@code{fsm}), TLS
 negotiation (@code{gnutls}), NTLM authentication (@code{ntlm} and
 @code{url-http-ntlm}) and SOAP communication (@code{soap-client}).
+
+@node Reporting Bugs
+@chapter Reporting Bugs
+
+@noindent
+To report a bug, use @code{M-x report-emacs-bug}, and put Excorporate
+somewhere in the subject.
 
 @bye
