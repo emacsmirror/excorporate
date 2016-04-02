@@ -35,6 +35,8 @@
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
       (setq buffer-read-only t)
       (org-mode)
+      (use-local-map (copy-keymap org-mode-map))
+      (local-set-key "q" 'quit-window)
       (display-buffer (current-buffer))
       (let ((inhibit-read-only t))
 	(delete-region (point-min) (point-max))
