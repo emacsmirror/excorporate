@@ -34,6 +34,7 @@
   "Add initial text to the destination buffer."
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
       (setq buffer-read-only t)
+      (setq buffer-file-name excorporate-org-buffer-name)
       (org-mode)
       (use-local-map (copy-keymap org-mode-map))
       (local-set-key "q" 'quit-window)
