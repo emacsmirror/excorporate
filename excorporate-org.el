@@ -34,8 +34,14 @@
   "Add initial text to the destination buffer."
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
       (setq buffer-read-only t)
-      (setq buffer-file-name excorporate-org-buffer-name)
-      (org-mode)
+      ;; Some Org mode configurations need `buffer-file-name' to be
+      ;; non-nil, or they'll make `org-mode' error out, for example
+      ;; `org-startup-with-latex-preview'.  Set `buffer-file-name' to
+      ;; something non-nil temporarily during initialization.  Don't
+      ;; leave it set or `save-some-buffers' will always prompt about
+      ;; *Excorporate*.
+      (let ((buffer-file-name excorporate-org-buffer-name))
+	(org-mode))
       (use-local-map (copy-keymap org-mode-map))
       (local-set-key "q" 'quit-window)
       (display-buffer (current-buffer))
