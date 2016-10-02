@@ -99,6 +99,9 @@
 ;; Erik Hetzner <egh@e6h.org> tested on Office 365 and helped debug
 ;; Office 365 support.
 
+;; Fabio Leimgruber <fabio.leimgruber@web.de> tested NTLM
+;; authentication against a challenging server configuration.
+
 ;;; Code:
 
 ;; Implementation-visible functions and variables.
