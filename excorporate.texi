@@ -43,10 +43,10 @@ and modified without restriction.
 Excorporate provides Exchange Web Services (EWS) support for Emacs.
 
 If the Exchange server you access is configured to provide EWS
-support, then there's a 76% chance that Excorporate will enable you to
-retrieve your calendar entries from the comfort of Emacs.
+support, then there's an 83% chance that Excorporate will enable you
+to retrieve your calendar entries from the comfort of Emacs.
 
-The 24% failure rate is because accessing -- in particular,
+The 17% failure rate is because accessing -- in particular,
 authenticating against -- an Exchange server can be challenging.
 
 Known to fail are Kerberos/GSSAPI authentication and accessing the
