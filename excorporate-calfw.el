@@ -31,7 +31,32 @@
 
 ;;; Code:
 
-(require 'calfw)
+;; calfw is not FSF-assigned yet so it is not in GNU ELPA.  The
+;; following workarounds allow excorporate-calfw.elc to be built
+;; regardless.
+(require 'calfw nil t)
+
+(declare-function cfw:component-model "ext:calfw" t)
+(declare-function cfw:cp-add-selection-change-hook "ext:calfw" t)
+(declare-function cfw:cp-get-contents-sources "ext:calfw" t)
+(declare-function cfw:create-calendar-component-buffer "ext:calfw" t)
+(declare-function cfw:cursor-to-nearest-date "ext:calfw" t)
+(declare-function cfw:date "ext:calfw" t)
+(declare-function cfw:model-set-contents-sources "ext:calfw" t)
+(declare-function cfw:refresh-calendar-buffer "ext:calfw" t)
+(declare-function make-cfw:event "ext:calfw" t)
+(declare-function make-cfw:source "ext:calfw" t)
+
+(defvar cfw:component)
+
+;; Fix a bad bug in calfw.  See:
+;; https://github.com/kiwanami/emacs-calfw/pull/79
+(defun cfw:cp-set-contents-sources (component sources)
+  "Set content SOURCES for COMPONENT.
+SOURCES is a list of content sources."
+  (cfw:model-set-contents-sources
+   sources (cfw:component-model component)))
+
 (require 'excorporate)
 
 (defvar excorporate-calfw-buffer-name "*Excorporate*"
@@ -85,7 +110,6 @@ are the requested participants."
   (let ((event-list (exco-calendar-item-iterate response
 						#'exco-calfw-add-meeting)))
     (with-current-buffer (get-buffer-create excorporate-calfw-buffer-name)
-      (declare (special cfw:component))
       (let* ((new-source (make-cfw:source
 			  :name (format "%S (as of %s)"
 					identifier
@@ -99,7 +123,6 @@ are the requested participants."
 (defun exco-calfw-finalize-buffer ()
   "Finalize the Calfw widget after retrievals have completed."
   (with-current-buffer (get-buffer-create excorporate-calfw-buffer-name)
-    (declare (special cfw:component))
     (let ((sources (cfw:cp-get-contents-sources cfw:component))
 	  (status-source (make-cfw:source :name "Done."
 					  :data (lambda (_b _e) nil))))
