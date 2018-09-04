@@ -111,6 +111,7 @@
 (require 'soap-client)
 (require 'fsm)
 (require 'excorporate-calendar)
+(require 'org)
 
 (defconst exco--autodiscovery-templates
   '("https://%s/autodiscover/autodiscover.svc"
