@@ -641,6 +641,103 @@ PATH is an ordered list of node names."
       (setq values (assoc path-element values)))
     (cdr values)))
 
+(defun exco-calendar-item-get-details (identifier item-identifier process-item)
+  "Query server for details about ITEM-IDENTIFIER.
+IDENTIFIER is the connection identifier.  Call PROCESS-ITEM with
+argument ICALENDAR-TEXT."
+  (exco-operate identifier
+		"GetItem"
+		`(((ItemShape
+		    (BaseShape . "IdOnly")
+		    (IncludeMimeContent . t))
+		   (ItemIds ,item-identifier))
+		  nil nil nil nil nil nil)
+		(lambda (_identifier response)
+		  (let* ((mime-path '(ResponseMessages
+				      GetItemResponseMessage
+				      Items
+				      CalendarItem
+				      MimeContent))
+			 (character-set-path (append mime-path '(CharacterSet)))
+			 (coding-system (intern (downcase (exco-extract-value
+							   character-set-path
+							   response)))))
+		    (unless (member coding-system coding-system-list)
+		      (error "Unrecognized coding system: %s"
+			     (exco-extract-value character-set-path response)))
+		    (funcall process-item (decode-coding-string
+					   (base64-decode-string
+					    (cdr (exco-extract-value
+						  mime-path response)))
+					   coding-system))))))
+
+(defmacro exco--calendar-item-dolist (item items &rest forms)
+  "Iterate through ITEMS.
+On each iteration, ITEM is set, and FORMS are run."
+  `(dolist (,item ,items)
+     (let* ((subject (cdr (assoc 'Subject ,item)))
+	    (start (cdr (assoc 'Start ,item)))
+	    (start-internal (apply #'encode-time
+				   (soap-decode-date-time
+				    start 'dateTime)))
+	    (end (cdr (assoc 'End ,item)))
+	    (end-internal (apply #'encode-time
+				 (soap-decode-date-time
+				  end 'dateTime)))
+	    (location (cdr (assoc 'Location ,item)))
+	    (to-invitees (cdr (assoc 'DisplayTo ,item)))
+	    (main-invitees (when to-invitees
+			     (mapcar 'org-trim
+				     (split-string to-invitees ";"))))
+	    (cc-invitees (cdr (assoc 'DisplayCc ,item)))
+	    (optional-invitees (when cc-invitees
+				 (mapcar 'org-trim
+					 (split-string cc-invitees ";"))))
+	    (item-identifier (assoc 'ItemId ,item)))
+       ,@forms)))
+
+(defun exco-calendar-item-with-details-iterate (identifier
+						response
+						callback
+						finalize)
+  "Iterate through calendar items in RESPONSE, calling CALLBACK on each.
+IDENTIFIER identifies the connection.
+
+CALLBACK takes the following arguments: FINALIZE, which is the
+FINALIZE argument to this function wrapped in a countdown,
+SUBJECT, a string, the subject of the meeting, START, the start
+date and time in Emacs internal representation, END, the start
+date and time in Emacs internal representation, LOCATION, the
+location of the meeting, MAIN-INVITEES, a list of strings
+representing required participants, OPTIONAL-INVITEES, a list of
+strings representing optional participants, DETAILS is the
+meeting request message body, and ICALENDAR-TEXT, the iCalendar
+text representing the meeting series.
+
+CALLBACK must arrange for FINALIZE to be called after its main
+processing is done."
+  (let* ((items (exco-extract-value '(ResponseMessages
+				      FindItemResponseMessage
+				      RootFolder
+				      Items)
+				    response))
+	 (countdown (length items))
+	 (finalizer
+	  (lambda (&rest arguments)
+	    (setq countdown (1- countdown))
+	    (when (equal countdown 0)
+	      (apply finalize arguments)))))
+    (if (equal countdown 0)
+	(funcall finalize identifier)
+      (exco--calendar-item-dolist
+       calendar-item items
+       (exco-calendar-item-get-details
+	identifier item-identifier
+	(lambda (icalendar-text)
+	  (funcall callback finalizer subject start-internal end-internal
+		   location main-invitees optional-invitees
+		   icalendar-text)))))))
+
 (defun exco-calendar-item-iterate (response callback)
   "Iterate through calendar items in RESPONSE, calling CALLBACK on each.
 Returns a list of results from callback.  CALLBACK takes arguments:
@@ -651,32 +748,15 @@ LOCATION, the location of the meeting.
 MAIN-INVITEES, a list of strings representing required participants.
 OPTIONAL-INVITEES, a list of strings representing optional participants."
   (let ((result-list '()))
-    (dolist (calendar-item (exco-extract-value '(ResponseMessages
-						 FindItemResponseMessage
-						 RootFolder
-						 Items)
-					       response))
-      (let* ((subject (cdr (assoc 'Subject calendar-item)))
-	     (start (cdr (assoc 'Start calendar-item)))
-	     (start-internal (apply #'encode-time
-				    (soap-decode-date-time
-				     start 'dateTime)))
-	     (end (cdr (assoc 'End calendar-item)))
-	     (end-internal (apply #'encode-time
-				  (soap-decode-date-time
-				   end 'dateTime)))
-	     (location (cdr (assoc 'Location calendar-item)))
-	     (to-invitees (cdr (assoc 'DisplayTo calendar-item)))
-	     (main-invitees (when to-invitees
-			      (mapcar 'org-trim
-				      (split-string to-invitees ";"))))
-	     (cc-invitees (cdr (assoc 'DisplayCc calendar-item)))
-	     (optional-invitees (when cc-invitees
-				  (mapcar 'org-trim
-					  (split-string cc-invitees ";")))))
-	(push (funcall callback subject start-internal end-internal
-		       location main-invitees optional-invitees)
-	      result-list)))
+    (exco--calendar-item-dolist
+     calendar-item (exco-extract-value '(ResponseMessages
+					 FindItemResponseMessage
+					 RootFolder
+					 Items)
+				       response)
+     (push (funcall callback subject start-internal end-internal
+		    location main-invitees optional-invitees)
+	   result-list))
     (nreverse result-list)))
 
 ;; Date-time utility functions.
