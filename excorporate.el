@@ -1,6 +1,6 @@
 ;;; excorporate.el --- Exchange integration           -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2016 Free Software Foundation, Inc.
+;; Copyright (C) 2014-2018 Free Software Foundation, Inc.
 
 ;; Author: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Maintainer: Thomas Fitzsimmons <fitzsim@fitzsim.org>
@@ -8,7 +8,7 @@
 ;; Version: 0.7.7
 ;; Keywords: calendar
 ;; Homepage: https://www.fitzsim.org/blog/
-;; Package-Requires: ((emacs "24.4") (fsm "0.2") (soap-client "3.1.4") (url-http-ntlm "2.0.3"))
+;; Package-Requires: ((emacs "24.1") (fsm "0.2") (soap-client "3.1.4") (url-http-ntlm "2.0.3") (nadvice "0.2"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -101,6 +101,10 @@
 
 ;; Fabio Leimgruber <fabio.leimgruber@web.de> tested NTLM
 ;; authentication against a challenging server configuration.
+
+;; Stefan Monnier <monnier@iro.umontreal.ca> wrote a variant of
+;; nadvice.el for GNU ELPA so that Excorporate could continue
+;; supporting Emacs versions 24.1, 24.2 and 24.3.
 
 ;;; Code:
 
@@ -728,7 +732,7 @@ processing is done."
 	    (when (equal countdown 0)
 	      (apply finalize arguments)))))
     (if (equal countdown 0)
-	(funcall finalize identifier)
+	(funcall finalize)
       (exco--calendar-item-dolist
        calendar-item items
        (exco-calendar-item-get-details

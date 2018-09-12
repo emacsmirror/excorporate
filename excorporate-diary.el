@@ -31,7 +31,9 @@
 (require 'icalendar)
 (require 'appt)
 (require 'excorporate)
+(require 'nadvice)
 
+;; FIXME: Add something like this to diary-lib.el.
 (defun exco-diary-diary-make-entry (string &optional nonmarking file)
   "Insert a diary entry STRING which may be NONMARKING in FILE.
 If omitted, NONMARKING defaults to nil and FILE defaults to
@@ -53,9 +55,9 @@ If omitted, NONMARKING defaults to nil and FILE defaults to
      (if nonmarking diary-nonmarking-symbol "")
      string)))
 
-(defadvice icalendar--add-diary-entry (around
-				       exco-diary-icalendar--add-diary-entry
-				       activate)
+;; FIXME: Have icalendar--add-diary-entry use the new diary-lib
+;; function instead of diary-make-entry.
+(defun exco-diary-icalendar--add-diary-entry-around (original &rest arguments)
   "Prevent whitespace workaround from selecting diary buffer.
 Also prevent `diary-make-entry' from putting the diary file
 where (other-buffer (current-buffer)) will return it."
@@ -65,7 +67,9 @@ where (other-buffer (current-buffer)) will return it."
 	    ;; and buffer manipulations.
 	    ((symbol-function #'diary-make-entry)
 	     (symbol-function #'exco-diary-diary-make-entry)))
-    ad-do-it))
+    (apply original arguments)))
+(advice-add #'icalendar--add-diary-entry :around
+	    #'exco-diary-icalendar--add-diary-entry-around)
 
 (defvar excorporate-diary-today-file
   "~/.emacs.d/excorporate/diary-excorporate-today"
@@ -83,7 +87,6 @@ This file will be #include'd in `diary-file' by
   "Initialize diary files used by Excorporate.
 Run before retrieving diary entries from servers.  TODAY is t to
 initialize for today's date, nil otherwise."
-  (message "Retrieving diary entries via Excorporate...")
   ;; Keep today's entries if running on a day other than today.  If
   ;; retrieving results for today, delete results from days other than
   ;; today, in case the transient file (having been filled in on a
@@ -149,6 +152,7 @@ the arguments to the advisee."
   ;; `diary-view-entries' are ignored.
   (exco-connection-iterate
    (lambda ()
+     (message "Retrieving diary entries via Excorporate...")
      (exco-diary-initialize (calendar-date-equal today date)))
    (lambda (identifier callback)
      (cl-destructuring-bind (month day year) date
@@ -166,7 +170,13 @@ the arguments to the advisee."
      (let ((appt-display-diary nil))
        (appt-check t))
      (message "Done retrieving diary entries via Excorporate."))
-   t))
+   t)
+  ;; Just return nil from this advice.  We eventually run the advisee
+  ;; asynchronously so there is no way of providing the same return
+  ;; value as the unadvised `diary' and `diary-view-entries'
+  ;; functions.  Luckily they seem to only be used interactively, at
+  ;; least within Emacs itself.
+  nil)
 
 (defun exco-diary-diary-around (original-diary &rest arguments)
   "Call `diary' asynchronously.
@@ -192,7 +202,10 @@ ARGUMENTS are the arguments to `diary-view-entries'."
 (defun excorporate-diary-enable ()
   "Enable Excorporate diary support."
   (interactive)
-  ;; Remove these first so that `diary' will not be run by any save
+  ;; Create the directory for Excorporate diary files if it doesn't
+  ;; already exist.
+  (exco-diary-initialize t)
+  ;; Remove advice first so that `diary' will not be run by any save
   ;; hooks.
   (advice-remove #'diary #'exco-diary-diary-around)
   (advice-remove #'diary-view-entries #'exco-diary-diary-view-entries-override)
@@ -209,12 +222,11 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (advice-add #'diary :around #'exco-diary-diary-around)
   (advice-add #'diary-view-entries :override
 	      #'exco-diary-diary-view-entries-override)
-  (add-hook 'diary-list-entries-hook 'diary-include-other-diary-files)
-  (add-hook 'diary-list-entries-hook 'diary-sort-entries)
+  (add-hook 'diary-list-entries-hook #'diary-sort-entries)
+  (add-hook 'diary-list-entries-hook #'diary-include-other-diary-files)
   (appt-activate 1)
   (message "Excorporate diary support enabled."))
 
-;;;###autoload
 (defun excorporate-diary-disable ()
   "Disable Excorporate diary support."
   (interactive)
