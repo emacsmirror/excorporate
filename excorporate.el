@@ -743,23 +743,49 @@ arguments, IDENTIFIER and the server's response."
 (defun exco-connection-iterate (initialize-function
 				per-connection-function
 				per-connection-callback
-				finalize-function)
+				finalize-function
+				&optional callback-will-call-finalize)
   "Iterate Excorporate connections.
-Call INITIALIZE-FUNCTION once before iterating.
-Call PER-CONNECTION-FUNCTION for each connection.
-Pass PER-CONNECTION-CALLBACK to PER-CONNECTION-FUNCTION.
-Call FINALIZE-FUNCTION after all operations have responded."
+Call INITIALIZE-FUNCTION once before iterating.  It takes no
+arguments.
+
+Call PER-CONNECTION-FUNCTION once for each server connection.  It
+is run synchronously.  It accepts two arguments, IDENTIFIER, the
+current server connection, and CALLBACK, which is a wrapped
+version of PER-CONNECTION-CALLBACK.
+
+PER-CONNECTION-CALLBACK takes a variable number of arguments,
+depending on which callback it is.  If
+CALLBACK-WILL-CALL-FINALIZE is non-nil, it takes a final
+FINALIZE-FUNCTION argument, which is a countdown-wrapped
+finalizer function that PER-CONNECTION-CALLBACK should call (or
+arrange to be called asynchronously) each time it is invoked.
+
+If CALLBACK-WILL-CALL-FINALIZE is non-nil, this function will not
+call FINALIZE-FUNCTION itself.  Instead it will wrap
+FINALIZE-FUNCTION into a function that can be called once per
+connection, then pass the wrapped finalizer to the callback as an
+argument.  CALLBACK-WILL-CALL-FINALIZE must be set if the
+callback needs to make a recursive asynchronous call."
   (exco--ensure-connection)
   (funcall initialize-function)
-  (let ((responses 0)
-	(connection-count (length exco--connection-identifiers)))
+  (let* ((countdown (length exco--connection-identifiers))
+	 (wrapped-finalizer
+	  (lambda (&rest arguments)
+	    (setq countdown (1- countdown))
+	    (when (equal countdown 0)
+	      (apply finalize-function arguments))))
+	 (wrapped-callback
+	  (lambda (&rest arguments)
+	    (apply per-connection-callback
+		   (append arguments
+			   (when callback-will-call-finalize
+			     (list wrapped-finalizer))))
+	    (unless callback-will-call-finalize
+	      (funcall wrapped-finalizer)))))
     (dolist (identifier exco--connection-identifiers)
       (funcall per-connection-function identifier
-	       (lambda (&rest arguments)
-		 (setq responses (1+ responses))
-		 (apply per-connection-callback arguments)
-		 (when (equal responses connection-count)
-		   (funcall finalize-function)))))))
+	       wrapped-callback))))
 
 ;; User-visible functions and variables.
 (defgroup excorporate nil
