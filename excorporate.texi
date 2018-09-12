@@ -46,14 +46,16 @@ If the Exchange server you access is configured to provide EWS
 support, then there's an 83% chance that Excorporate will enable you
 to retrieve your calendar entries from the comfort of Emacs.
 
-The 17% failure rate is because accessing -- in particular,
-authenticating against -- an Exchange server can be challenging.
+The 17% failure rate is because authenticating against an Exchange
+server can be challenging.
 
-Known to fail are Kerberos/GSSAPI authentication and accessing the
-server through a proxy
-(@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10}).
+Kerberos/GSSAPI authentication is known to fail.  Accessing the server
+through a proxy may be possible now that
+@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10} is fixed.
 
-Patches are welcome to enable more of these access scenarios.
+Reports of success or failure of different connection types are
+welcome, as are patches to enable more of these access scenarios.  See
+@pxref{Reporting Bugs}.
 
 @menu
 * Installation::                Getting and installing @code{excorporate}.
@@ -106,22 +108,39 @@ The EWS URL is of the form
 After saving the configuration, try @code{M-x excorporate} again.
 
 @noindent
-If that doesn't work, then you're probably out of luck, or you'll have
-to start a troubleshooting deep dive (@pxref{Troubleshooting}).
+If that doesn't work, @pxref{Troubleshooting}.
 
 @node Usage
 @chapter Usage
 
 @noindent
-Excorporate binds `e' in @code{*Calendar*} buffers.  Open the calendar
-with:
+Excorporate can put entries it retrieves into the Emacs Diary, and use
+@code{appt} to remind you a few minutes before a meeting starts.  To
+enable this support, do:
+
+@code{M-x excorporate-diary-enable}
+
+@noindent
+Open the calendar with:
 
 @code{M-x calendar}
 
 @noindent
 move the cursor to the date you want to see meetings for, and press
-`e'.  This will show the meetings in a temporary read-only Org Mode
-buffer named @code{*Excorporate*}.
+`d'.  Some time later, asynchronously, a window will pop up containing
+events retrieved from the Exchange server in addition to
+locally-entered diary events.  The events are all sorted by time.
+
+Excorporate also binds `e' in @code{*Calendar*} buffers to
+@code{excorporate-calendar-show-day-function} to allow a different
+view of retrieved events.  By default,
+@code{excorporate-calendar-show-day-function} is set to
+@code{exco-org-show-day} which displays meetings in a temporary
+read-only Org Mode buffer named @code{*Excorporate*}.
+
+If you prefer, you can install the @code{calfw} package, and set
+@code{excorporate-calendar-show-day-function} to
+@code{exco-calfw-show-day}.
 
 @node Troubleshooting
 @chapter Troubleshooting
@@ -132,7 +151,7 @@ trying to access provides EWS support.  If it doesn't, Excorporate
 can't do anything for you.  Before asking your Exchange administrator,
 check intranet wikis and so forth; other users of non-standard clients
 may have already found the EWS URL.  This is called the ``EWS
-endpoint''.  I can be as simple as something like:
+endpoint''.  It can be as simple as, e.g.:
 
 @code{https://mail.gnu.org/ews/exchange.asmx}
 

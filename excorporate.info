@@ -1,4 +1,4 @@
-This is excorporate.info, produced by makeinfo version 6.0 from
+This is excorporate.info, produced by makeinfo version 6.4 from
 excorporate.texi.
 
 Copyright (C) 2016 Free Software Foundation, Inc.
@@ -32,17 +32,19 @@ Excorporate Manual
 Excorporate provides Exchange Web Services (EWS) support for Emacs.
 
    If the Exchange server you access is configured to provide EWS
-support, then there's a 76% chance that Excorporate will enable you to
+support, then there's an 83% chance that Excorporate will enable you to
 retrieve your calendar entries from the comfort of Emacs.
 
-   The 24% failure rate is because accessing - in particular,
-authenticating against - an Exchange server can be challenging.
+   The 17% failure rate is because authenticating against an Exchange
+server can be challenging.
 
-   Known to fail are Kerberos/GSSAPI authentication and accessing the
-server through a proxy
-(<https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10>).
+   Kerberos/GSSAPI authentication is known to fail.  Accessing the
+server through a proxy may be possible now that
+<https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10> is fixed.
 
-   Patches are welcome to enable more of these access scenarios.
+   Reports of success or failure of different connection types are
+welcome, as are patches to enable more of these access scenarios.  See
+*note Reporting Bugs::.
 
 * Menu:
 
@@ -92,8 +94,7 @@ EWS URL is of the form 'https://mail.gnu.org/ews/exchange.asmx'.
 
 After saving the configuration, try 'M-x excorporate' again.
 
-If that doesn't work, then you're probably out of luck, or you'll have
-to start a troubleshooting deep dive (*note Troubleshooting::).
+If that doesn't work, *note Troubleshooting::.
 
 
 File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configuration,  Up: Top
@@ -101,13 +102,29 @@ File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configurati
 3 Usage
 *******
 
-Excorporate binds 'e' in '*Calendar*' buffers.  Open the calendar with:
+Excorporate can put entries it retrieves into the Emacs Diary, and use
+'appt' to remind you a few minutes before a meeting starts.  To enable
+this support, do:
+
+   'M-x excorporate-diary-enable'
+
+Open the calendar with:
 
    'M-x calendar'
 
-move the cursor to the date you want to see meetings for, and press 'e'.
-This will show the meetings in a temporary read-only Org Mode buffer
-named '*Excorporate*'.
+move the cursor to the date you want to see meetings for, and press 'd'.
+Some time later, asynchronously, a window will pop up containing events
+retrieved from the Exchange server in addition to locally-entered diary
+events.  The events are all sorted by time.
+
+   Excorporate also binds 'e' in '*Calendar*' buffers to
+'excorporate-calendar-show-day-function' to allow a different view of
+retrieved events.  By default, 'excorporate-calendar-show-day-function'
+is set to 'exco-org-show-day' which displays meetings in a temporary
+read-only Org Mode buffer named '*Excorporate*'.
+
+   If you prefer, you can install the 'calfw' package, and set
+'excorporate-calendar-show-day-function' to 'exco-calfw-show-day'.
 
 
 File: excorporate.info,  Node: Troubleshooting,  Next: Reporting Bugs,  Prev: Usage,  Up: Top
@@ -119,8 +136,8 @@ First, you'll want to double-check that the Exchange server you're
 trying to access provides EWS support.  If it doesn't, Excorporate can't
 do anything for you.  Before asking your Exchange administrator, check
 intranet wikis and so forth; other users of non-standard clients may
-have already found the EWS URL. This is called the "EWS endpoint".  I
-can be as simple as something like:
+have already found the EWS URL. This is called the "EWS endpoint".  It
+can be as simple as, e.g.:
 
    'https://mail.gnu.org/ews/exchange.asmx'
 
@@ -203,10 +220,10 @@ somewhere in the subject.
 
 Tag Table:
 Node: Top1103
-Node: Installation2124
-Node: Configuration2387
-Node: Usage3435
-Node: Troubleshooting3806
-Node: Reporting Bugs6649
+Node: Installation2222
+Node: Configuration2485
+Node: Usage3445
+Node: Troubleshooting4509
+Node: Reporting Bugs7344
 
 End Tag Table
