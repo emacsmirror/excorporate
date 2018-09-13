@@ -126,6 +126,14 @@ read-only Org Mode buffer named '*Excorporate*'.
    If you prefer, you can install the 'calfw' package, and set
 'excorporate-calendar-show-day-function' to 'exco-calfw-show-day'.
 
+   After you've retrieved today's meetings, 'appt' will warn you several
+minutes before your next meeting starts by popping up a window with the
+meeting details.
+
+   If you leave Emacs running overnight, at 12:01 AM 'appt' (via
+Excorporate) will retrieve your meetings and display your diary so that
+you see the day's events first thing in the morning.
+
 
 File: excorporate.info,  Node: Troubleshooting,  Next: Reporting Bugs,  Prev: Usage,  Up: Top
 
@@ -223,7 +231,7 @@ Node: Top1103
 Node: Installation2222
 Node: Configuration2485
 Node: Usage3445
-Node: Troubleshooting4509
-Node: Reporting Bugs7344
+Node: Troubleshooting4863
+Node: Reporting Bugs7698
 
 End Tag Table
