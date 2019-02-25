@@ -121,7 +121,7 @@ are the requested participants."
       (if (save-excursion (org-goto-first-child))
 	  (org-sort-entries t ?s)
 	(forward-line 3)
-	(insert "`♘")))))
+	(insert "`♘\n")))))
 
 (defun exco-org-finalize-buffer ()
   "Finalize text in buffer after all connections have responded."
