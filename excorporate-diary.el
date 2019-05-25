@@ -123,7 +123,7 @@ Call FINALIZE after the meeting has been inserted."
   (when (not (string-match "^Cancel[l]?ed: " subject))
     ;; FIXME: Sometimes meetings are duplicated if they have
     ;; overlapping (and (diary-cyclic ...) (diary-block ...)) ranges,
-    ;; e.g., on in the today file and one in the transient file.
+    ;; e.g., one in the today file and one in the transient file.
     ;; Maybe we should de-duplicate them in the final display.  If the
     ;; meeting start time is sometime today then put it in today's
     ;; diary file, otherwise put it in the transient one.
