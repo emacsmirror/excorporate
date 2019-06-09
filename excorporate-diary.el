@@ -33,7 +33,9 @@
 (require 'excorporate)
 (require 'nadvice)
 
-;; FIXME: Add something like this to diary-lib.el.
+;; For Emacs versions less than 27.1, which do not have the fix for
+;; Bug#35645, work around the issue where `icalendar-import-buffer'
+;; pops up the diary file buffer.
 (defun exco-diary-diary-make-entry (string &optional nonmarking file)
   "Insert a diary entry STRING which may be NONMARKING in FILE.
 If omitted, NONMARKING defaults to nil and FILE defaults to
@@ -55,8 +57,6 @@ If omitted, NONMARKING defaults to nil and FILE defaults to
      (if nonmarking diary-nonmarking-symbol "")
      string)))
 
-;; FIXME: Have icalendar--add-diary-entry use the new diary-lib
-;; function instead of diary-make-entry.
 (defun exco-diary-icalendar--add-diary-entry-around (original &rest arguments)
   "Prevent whitespace workaround from selecting diary buffer.
 Also prevent `diary-make-entry' from putting the diary file
@@ -68,8 +68,10 @@ where (other-buffer (current-buffer)) will return it."
 	    ((symbol-function #'diary-make-entry)
 	     (symbol-function #'exco-diary-diary-make-entry)))
     (apply original arguments)))
-(advice-add #'icalendar--add-diary-entry :around
-	    #'exco-diary-icalendar--add-diary-entry-around)
+
+(unless (string-match "omit-trailing-space" (documentation 'diary-make-entry))
+  (advice-add #'icalendar--add-diary-entry :around
+	      #'exco-diary-icalendar--add-diary-entry-around))
 
 (defvar excorporate-diary-today-file
   "~/.emacs.d/excorporate/diary-excorporate-today"
@@ -216,8 +218,11 @@ ARGUMENTS are the arguments to `diary-view-entries'."
 	(goto-char (point-min))
 	(when (not (re-search-forward
 		    (concat "^ *" diary-include-string " *\"" file "\"") nil t))
-	  (exco-diary-diary-make-entry
-	   (concat diary-include-string " \"" file "\""))
+	  (let ((include-string (concat diary-include-string " \"" file "\"")))
+	    (if (string-match "omit-trailing-space"
+			      (documentation 'diary-make-entry))
+		(diary-make-entry include-string nil nil t t)
+	      (exco-diary-diary-make-entry include-string)))
 	  (save-buffer)))))
   (advice-add #'diary :around #'exco-diary-diary-around)
   (advice-add #'diary-view-entries :override
