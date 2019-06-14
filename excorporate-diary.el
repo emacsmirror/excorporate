@@ -60,7 +60,9 @@ If omitted, NONMARKING defaults to nil and FILE defaults to
 (defun exco-diary-icalendar--add-diary-entry-around (original &rest arguments)
   "Prevent whitespace workaround from selecting diary buffer.
 Also prevent `diary-make-entry' from putting the diary file
-where (other-buffer (current-buffer)) will return it."
+where (other-buffer (current-buffer)) will return it.  ORIGINAL
+and ARGUMENTS are the original function and arguments
+respectively."
   (cl-letf (((symbol-function #'find-file)
 	     (symbol-function #'find-file-noselect))
 	    ;; This override suppresses diary-make-entry's window
