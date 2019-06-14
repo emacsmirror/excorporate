@@ -151,6 +151,25 @@ Call FINALIZE after the meeting has been inserted."
 		   excorporate-diary-transient-file)))
       (with-temp-buffer
 	(insert icalendar-text)
+
+	;; FIXME: Maybe some users of multiple calendars will want to
+	;; know the source calendar's name for each diary entry.
+	;; There is no great way to achieve that right now, but one
+	;; idea is to add X-WR-CALNAME support to
+	;; icalendar-import-buffer, replace the
+	;; exco-diary-insert-meeting argument to
+	;; exco-calendar-item-with-details-iterate with:
+	;;
+	;; (lambda (&rest arguments)
+	;;  (apply #'exco-diary-insert-meeting identifier arguments))
+	;;
+	;; and uncomment the following code.
+	;;
+	;; (goto-char (point-min))
+	;; (while (re-search-forward
+	;;	"^SUMMARY\\([^:]*\\):\\(.*\\(\n[ 	].*\\)*\\)" nil t)
+	;;   (insert (format "\nX-WR-CALNAME: (%s)" identifier)))
+
 	;; Escape literal percent signs (%).  Use less-than sign (<)
 	;; and greater-than sign (>) which are forbidden URL
 	;; characters, so that in the plain text diary file,
