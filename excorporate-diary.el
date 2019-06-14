@@ -261,7 +261,8 @@ ARGUMENTS are the arguments to `diary-view-entries'."
 	  (let ((include-string (concat diary-include-string " \"" file "\"")))
 	    (if (string-match "omit-trailing-space"
 			      (documentation 'diary-make-entry))
-		(diary-make-entry include-string nil nil t t)
+		(with-no-warnings
+		  (diary-make-entry include-string nil nil t t))
 	      (exco-diary-diary-make-entry include-string)))
 	  (save-buffer)))))
   (advice-add #'diary :around #'exco-diary-diary-around)
