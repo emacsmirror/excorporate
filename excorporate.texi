@@ -79,36 +79,35 @@ Install @code{excorporate} from the GNU ELPA repository:
 @chapter Configuration
 
 @noindent
-Ideally you won't need to configure Excorporate at all.  On friendly
-Exchange setups, Excorporate can discover the EWS URL automatically.
+Ideally you won't need to configure Excorporate beyond providing your
+account email address.  On friendly Exchange setups, Excorporate can
+discover the EWS URL automatically.
 
 @noindent
-First try:
+Run:
 
 @code{M-x excorporate}
 
 @noindent
-which will prompt you for the Exchange account email address.  Follow
-the prompts and if all goes well, you'll see a message in the
-minibuffer or in *Messages* saying that the connection is ready.
+which will prompt you for the Exchange account configuration.  Follow
+the prompts and if all goes well, you'll see a message in the minibuffer
+or in *Messages* saying that the connection is ready.  Using the
+prompts, you can first try with autodiscovery.  If autodiscovery runs
+out of URLs to try, re-run @code{excorporate}, saying 'n' to the
+autodiscovery attempt, at which point you will be asked for the EWS URL.
 
 @noindent
-If autodiscovery runs out of URLs to try, then customize
+To save a working configuration, customize
 @code{excorporate-configuration}:
 
 @code{M-x customize-variable RET excorporate-configuration}
 
 @noindent
-From the value menu select ``Skip autodiscovery''.  This allows you to
-enter the Exchange account email address and the EWS URL directly.
-The EWS URL is of the form
-@code{https://mail.gnu.org/ews/exchange.asmx}.
-
-@noindent
 After saving the configuration, try @code{M-x excorporate} again.
 
 @noindent
-If that doesn't work, @pxref{Troubleshooting}.
+If neither autodiscovery nor specifying the EWS URL work,
+@pxref{Troubleshooting}.
 
 @node Usage
 @chapter Usage

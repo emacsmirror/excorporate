@@ -1,4 +1,4 @@
-This is excorporate.info, produced by makeinfo version 6.4 from
+This is excorporate.info, produced by makeinfo version 6.5 from
 excorporate.texi.
 
 Copyright (C) 2016 Free Software Foundation, Inc.
@@ -72,29 +72,29 @@ File: excorporate.info,  Node: Configuration,  Next: Usage,  Prev: Installation,
 2 Configuration
 ***************
 
-Ideally you won't need to configure Excorporate at all.  On friendly
-Exchange setups, Excorporate can discover the EWS URL automatically.
+Ideally you won't need to configure Excorporate beyond providing your
+account email address.  On friendly Exchange setups, Excorporate can
+discover the EWS URL automatically.
 
-First try:
+Run:
 
    'M-x excorporate'
 
-which will prompt you for the Exchange account email address.  Follow
+which will prompt you for the Exchange account configuration.  Follow
 the prompts and if all goes well, you'll see a message in the minibuffer
-or in *Messages* saying that the connection is ready.
+or in *Messages* saying that the connection is ready.  Using the
+prompts, you can first try with autodiscovery.  If autodiscovery runs
+out of URLs to try, re-run 'excorporate', saying 'n' to the
+autodiscovery attempt, at which point you will be asked for the EWS URL.
 
-If autodiscovery runs out of URLs to try, then customize
-'excorporate-configuration':
+To save a working configuration, customize 'excorporate-configuration':
 
    'M-x customize-variable RET excorporate-configuration'
 
-From the value menu select "Skip autodiscovery".  This allows you to
-enter the Exchange account email address and the EWS URL directly.  The
-EWS URL is of the form 'https://mail.gnu.org/ews/exchange.asmx'.
-
 After saving the configuration, try 'M-x excorporate' again.
 
-If that doesn't work, *note Troubleshooting::.
+If neither autodiscovery nor specifying the EWS URL work, *note
+Troubleshooting::.
 
 
 File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configuration,  Up: Top
@@ -230,8 +230,8 @@ Tag Table:
 Node: Top1103
 Node: Installation2222
 Node: Configuration2485
-Node: Usage3445
-Node: Troubleshooting4863
-Node: Reporting Bugs7698
+Node: Usage3505
+Node: Troubleshooting4923
+Node: Reporting Bugs7758
 
 End Tag Table
