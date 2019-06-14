@@ -119,8 +119,9 @@ initialize for today's date, nil otherwise."
 (defun exco-diary--fix-percent-signs ()
   "Replace percent-sign placeholders with percent signs."
   (goto-char (point-min))
-  (while (re-search-forward "<EXCO_PERCENT_SIGN>" nil t)
-    (replace-match "%")))
+  (let ((inhibit-read-only t))
+    (while (re-search-forward "<EXCO_PERCENT_SIGN>" nil t)
+      (replace-match "%"))))
 
 (defun exco-diary-insert-meeting (finalize
 				  subject start _end _location
