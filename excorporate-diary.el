@@ -1,6 +1,6 @@
 ;;; excorporate-diary.el --- Diary integration        -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Free Software Foundation, Inc.
+;; Copyright (C) 2018-2019 Free Software Foundation, Inc.
 
 ;; Author: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Keywords: calendar

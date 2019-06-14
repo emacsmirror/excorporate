@@ -1,5 +1,17 @@
 GNU Emacs Excorporate NEWS -- history of user-visible changes.
 
+* Excorporate 0.8.2
+
+Released 2019-06-14
+
+** Enable multiple connections
+
+The excorporate-configuration variable can now be a list representing
+multiple servers.  The excorporate function will create one connection
+per server configured.  Connections to additional servers can be
+dynamically created by passing a prefix argument to the excorporate
+function.
+
 * Excorporate 0.8.1
 
 Released 2018-09-15
