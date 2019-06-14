@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 
-;; Use the Org Mode to display daily meetings.
+;; Use Org Mode to display daily meetings.
 
 ;;; Code:
 
@@ -30,8 +30,12 @@
 (defvar excorporate-org-buffer-name "*Excorporate*"
   "The buffer into which Org Mode output is inserted.")
 
+(defvar exco-org--temporary-buffers '()
+  "A list of per-connection result buffers.")
+
 (defun exco-org-initialize-buffer ()
   "Add initial text to the destination buffer."
+  (setq exco-org--temporary-buffers '())
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
       (setq buffer-read-only t)
       ;; Some Org mode configurations need `buffer-file-name' to be
@@ -47,7 +51,7 @@
       (display-buffer (current-buffer))
       (let ((inhibit-read-only t))
 	(delete-region (point-min) (point-max))
-	(goto-char 1)
+	(goto-char (point-min))
 	(insert "# Updated...\n"))))
 
 (defun exco-org-format-headline (identifier)
@@ -77,13 +81,21 @@ by `current-time'."
   (dolist (invitee invitees)
     (insert (format "  + %s\n" invitee))))
 
+(defun exco-org--identifier-buffer (identifier)
+  "Return a hidden buffer with a name based on IDENTIFIER."
+  (get-buffer-create
+   (format " *exco-org-%S*" identifier)))
+
 (defun exco-org-insert-headline (identifier month day year)
   "Insert Org headline for IDENTIFIER on date MONTH DAY YEAR."
-  (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
-    (let ((inhibit-read-only t))
-      (insert (exco-org-format-headline identifier))
-      (org-insert-time-stamp (encode-time 0 0 0 day month year)
-			     nil t "  + Date " "\n"))))
+  (let ((temporary-buffer (exco-org--identifier-buffer identifier)))
+    (push temporary-buffer exco-org--temporary-buffers)
+    (with-current-buffer temporary-buffer
+      (let ((inhibit-read-only t))
+	(delete-region (point-min) (point-max))
+	(insert (exco-org-format-headline identifier))
+	(org-insert-time-stamp (encode-time 0 0 0 day month year)
+			       nil t "  + Date " "\n")))))
 
 (defun exco-org-insert-meeting (subject start end location
 					main-invitees optional-invitees)
@@ -107,17 +119,19 @@ are the requested participants."
 (defun exco-org-insert-meetings (identifier response)
   "Insert the connection IDENTIFIER's meetings from RESPONSE."
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
-    (let ((inhibit-read-only t)
-	  (name-regexp (concat "\\" (exco-org-format-headline identifier))))
-      (goto-char 1)
+    (let ((inhibit-read-only t))
+      (goto-char (point-min))
       (end-of-line)
-      (insert (format "%s..." identifier))
-      (goto-char (point-max))
-      (re-search-backward name-regexp nil)
-      (forward-line 2)
+      (insert (format "%s..." identifier))))
+  (with-current-buffer (exco-org--identifier-buffer identifier)
+    (let ((inhibit-read-only t))
       (org-insert-time-stamp (current-time) t t "  + Last checked " "\n")
-      (exco-calendar-item-iterate response #'exco-org-insert-meeting)
-      (re-search-backward name-regexp nil)
+      (exco-calendar-item-iterate
+       response (lambda (&rest arguments)
+		  (with-current-buffer (exco-org--identifier-buffer identifier)
+		    (org-mode)
+		    (apply #'exco-org-insert-meeting arguments))))
+      (goto-char (point-min))
       (if (save-excursion (org-goto-first-child))
 	  (org-sort-entries t ?s)
 	(forward-line 3)
@@ -130,8 +144,11 @@ are the requested participants."
     (let ((inhibit-read-only t))
       (goto-char (point-min))
       (end-of-line)
-      (insert "done.")
-      (org-sort-entries t ?a))))
+      (insert "done.\n")
+      (dolist (result-buffer (nreverse exco-org--temporary-buffers))
+	(insert-buffer-substring result-buffer)
+	(kill-buffer result-buffer))
+      (setq exco-org--temporary-buffers '()))))
 
 ;;;###autoload
 (defun exco-org-show-day (month day year)
