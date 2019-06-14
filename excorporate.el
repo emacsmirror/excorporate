@@ -1,4 +1,4 @@
-;;; excorporate.el --- Exchange integration           -*- lexical-binding: t -*-
+;;; excorporate.el --- Exchange Web Services (EWS) integration -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2014-2018 Free Software Foundation, Inc.
 
@@ -117,6 +117,8 @@
 (require 'excorporate-calendar)
 (require 'org)
 
+;; For Office 365, URLs containing autodiscover-s.outlook.com do not
+;; seem to work properly (the returned XML gives ErrorCode 600).
 (defconst exco--autodiscovery-templates
   '("https://%s/autodiscover/autodiscover.svc"
     "https://autodiscover.%s/autodiscover/autodiscover.svc")
@@ -265,60 +267,64 @@ the FSM should transition to on success."
 (define-state-machine exco--fsm :start
   ((identifier)
    "Start an Excorporate finite state machine."
-   (if (stringp identifier)
-       (let ((domain (cadr (split-string identifier "@"))))
-	 (unless (and domain (not (equal domain "")))
-	   (error "Invalid domain for address %s" identifier))
-	 (list :retrieving-autodiscovery-xml
-	       (list
-		;; State machine data.
-		;; Unique finite state machine identifier.  Either mail-address
-		;; or (mail-address . service-url).  The latter allows multiple
-		;; state machines to operate on the same service URL.  Login
-		;; credentials are handled separately by auth-source and url,
-		;; so these should be the only two identifier types needed here.
-		:identifier identifier
-		;; User data.
-		:mail-address identifier
-		;; Error recovery data.
-		:retrying nil
-		;; Autodiscovery data.
-		:autodiscovery-urls
-		(append (mapcar (lambda (template)
-				  (format template domain))
-				exco--autodiscovery-templates)
-			;; Handle the user@sub.domain.com =>
-			;; autodiscover.domain.com case reported by a
-			;; user.  Only try one extra level.
-			(let ((domain-parts (split-string domain "\\.")))
-			  (when (> (length domain-parts) 2)
-			    (mapcar (lambda (template)
-				      (format template
-					      (mapconcat
-					       'identity
-					       (cdr domain-parts) ".")))
-				    exco--autodiscovery-templates))))
-		;; Service data.
-		:service-url nil
-		:service-xml nil
-		:service-wsdl nil
-		;; State data.
-		:next-state-after-success nil
-		:failure-message nil
-		:server-version nil)
-	       ;; No timeout.
-	       nil))
-     ;; Go directly to :retrieving-service-xml, skipping autodiscovery.
-     (list :retrieving-service-xml
+   (let* ((autodiscover (stringp identifier))
+	  (mail (if autodiscover identifier (car identifier)))
+	  (url (unless autodiscover (cdr identifier)))
+	  (autodiscovery-urls
+	   (when autodiscover
+	     (let ((domain (cadr (split-string mail "@"))))
+	       (unless (and domain (not (equal domain "")))
+		 (error "Invalid domain for address %s" mail))
+	       (append (mapcar (lambda (template)
+				 (format template domain))
+			       exco--autodiscovery-templates)
+		       ;; Handle the user@sub.domain.com =>
+		       ;; autodiscover.domain.com case reported by a
+		       ;; user.  Only try one extra level.
+		       (let ((domain-parts (split-string domain "\\.")))
+			 (when (> (length domain-parts) 2)
+			   (mapcar (lambda (template)
+				     (format template
+					     (mapconcat
+					      'identity
+					      (cdr domain-parts) ".")))
+				   exco--autodiscovery-templates)))))))
+	  (service-url (unless autodiscover url))
+	  (next-state (if autodiscover
+			  :retrieving-autodiscovery-xml
+			;; Go directly to :retrieving-service-xml,
+			;; skipping autodiscovery.
+			:retrieving-service-xml)))
+     (list next-state
 	   (list
+	    ;; State machine data.
+	    ;;
+	    ;; Unique finite state machine identifier, either a
+	    ;; string, mail-address (which implies the URL is
+	    ;; autodiscovered) or a pair of strings, (mail-address
+	    ;; . service-url).  This format allows multiple state
+	    ;; machines to operate on the same mail address or service
+	    ;; URL.  Login credentials are handled separately by
+	    ;; auth-source and url, so it should be possible for one
+	    ;; Emacs process to have simultaneous Excorporate
+	    ;; connections for, e.g.: ("mail-1" . "url-1") and
+	    ;; ("mail-2" . "url-1") or even: "mail-1" and ("mail-1"
+	    ;; . "url-2") if that's ever desirable.
 	    :identifier identifier
-	    :mail-address (car identifier)
+	    ;; User data.
+	    :mail-address mail
+	    ;; Error recovery data.
 	    :retrying nil
-	    :autodiscovery-urls nil
-	    ;; Use service-url field from identifier.
-	    :service-url (cdr identifier)
+	    ;; Autodiscovery data.
+	    ;; This is nil when not doing autodiscovery.
+	    :autodiscovery-urls autodiscovery-urls
+	    ;; Service data.
+	    ;; When doing autodiscovery this is nil, otherwise
+	    ;; it is the service-url field from `identifier'.
+	    :service-url service-url
 	    :service-xml nil
 	    :service-wsdl nil
+	    ;; State data.
 	    :next-state-after-success nil
 	    :failure-message nil
 	    :server-version nil)
@@ -595,22 +601,27 @@ is subject to change."
 
 (defun exco-connect (identifier)
   "Connect or reconnect to a web service.
-IDENTIFIER is the mail address to use for autodiscovery or a
-pair (mail-address . service-url)."
-  (if (stringp identifier)
-      (message "Excorporate: Starting autodiscovery for %S"
-	       identifier))
-  (let ((fsm (start-exco--fsm identifier)))
-    (unless exco--connections
-      (setq exco--connections (make-hash-table :test 'equal)))
-    (when (gethash identifier exco--connections)
-      (exco-disconnect identifier))
-    (puthash identifier fsm exco--connections)
-    (push identifier exco--connection-identifiers)
-    (if (stringp identifier)
-	(fsm-send fsm :try-next-url)
-      (fsm-send fsm :retrieve-xml))
-    nil))
+IDENTIFIER is either a string representing a mail address or a
+pair of strings, representing a mail address and a service URL.
+
+If IDENTIFIER is a mail address, `exco-connect' will use it to
+autodiscover the service URL to use.  If IDENTIFIER is a pair,
+`exco-connect' will not perform autodiscovery, but will instead
+use the `cdr' of the pair as the service URL."
+  (let ((autodiscover (stringp identifier)))
+    (when autodiscover
+      (message "Excorporate: Starting autodiscovery for %s" identifier))
+    (let ((fsm (start-exco--fsm identifier)))
+      (unless exco--connections
+	(setq exco--connections (make-hash-table :test 'equal)))
+      (when (gethash identifier exco--connections)
+	(exco-disconnect identifier))
+      (puthash identifier fsm exco--connections)
+      (push identifier exco--connection-identifiers)
+      (if autodiscover
+	  (fsm-send fsm :try-next-url)
+	(fsm-send fsm :retrieve-xml))
+      nil)))
 
 (defun exco-operate (identifier name arguments callback)
   "Execute a service operation asynchronously.
@@ -885,33 +896,87 @@ callback needs to make a recursive asynchronous call."
 ;; future it could allow a list of strings and pairs.
 (defcustom excorporate-configuration nil
   "Excorporate configuration.
-The mail address to use for autodiscovery."
-  :type '(choice
-	  (const
-	   :tag "Prompt for Exchange mail address to use for autodiscovery" nil)
-	  (string :tag "Exchange mail address to use for autodiscovery")
-	  (cons :tag "Skip autodiscovery"
-		(string :tag "Exchange mail address (e.g., hacker@gnu.org)")
-		(string :tag "Exchange Web Services URL\
- (e.g., https://mail.gnu.org/ews/exchange.asmx)"))))
+
+This is the account information that Excorporate uses to connect
+to one or more Exchange servers.  No secrets are stored here.  To
+manage passwords, Excorporate will either use `auth-source' or
+prompt for them in the minibuffer.
+
+This customization variable can hold a string representing an
+Exchange email address, or a pair of strings representing an
+Exchange email address and an Exchange Web Services (EWS) URL, or
+a list of such strings and pairs of strings.
+
+Specifying just an email address implies that Excorporate should
+attempt to autodiscover the service URL for the account.
+
+Examples:
+
+\"hacker@gnu.org\"
+=> Excorporate will attempt to autodiscover the EWS URL
+
+\(\"hacker@gnu.org\" . \"https://mail.gnu.org/ews/exchange.asmx\")
+=> Excorporate will use the provided EWS URL
+
+Other Excorporate documentation refers to the email address as
+the \"mail address\", and the EWS URL as the \"service URL\"."
+  :type
+  '(choice
+    (const
+     :tag "Prompt for Exchange account information" nil)
+    #1=(string
+	:tag "Exchange email address (autodiscover settings)")
+    #2=(cons
+	:tag "Exchange email address and EWS URL (no autodiscovery)"
+	(string :tag "Exchange mail address (e.g., hacker@gnu.org)")
+	(string :tag "EWS URL (e.g., https://mail.gnu.org/ews/exchange.asmx)"))
+    (repeat :tag "List of configurations"
+	    (choice #1# #2#))))
+
+(defun exco--string-or-string-pair-p (value)
+  "Return t if VALUE is a string or a pair of strings."
+  (or (stringp value)
+      ;; A single dotted pair with neither element nil.
+      (and (consp value)
+	   (not (consp (cdr value)))
+	   (not (null (car value)))
+	   (not (null (cdr value))))))
 
 ;;;###autoload
-(defun excorporate ()
+(defun excorporate (&optional argument)
   "Start Excorporate.
-Prompt for a mail address to use for autodiscovery, with an
-initial suggestion of `user-mail-address'.  However, if
-`excorporate-configuration' is non-nil, `excorporate' will use
-that without prompting."
-  (interactive)
+If `excorporate-configuration' is non-nil, use it without
+prompting, otherwise prompt for Exchange account information, starting
+with an email address.
+
+Prefixed with one \\[universal-argument], always prompt for
+Exchange account information for a new web service connection.
+ARGUMENT is the prefix argument."
+  (interactive "P")
   (cond
-   ((eq excorporate-configuration nil)
-    (exco-connect (completing-read "Exchange mail address: "
-				   (list user-mail-address)
-				   nil nil user-mail-address)))
-   ((stringp excorporate-configuration)
+   ((or (equal argument '(4))
+	(eq excorporate-configuration nil))
+    ;; Prompt.
+    (let* ((url "https://mail.gnu.org/ews/exchange.asmx")
+	   (suggestion user-mail-address)
+	   (ask-1 "Exchange mail address: ")
+	   (ask-2 "Attempt settings autodiscovery ('n' for Office 365)?")
+	   (ask-3 "EWS URL: ")
+	   (mail (completing-read ask-1 (list suggestion) nil nil suggestion))
+	   (identifier
+	    (if (y-or-n-p ask-2)
+		mail
+	      (cons mail(completing-read ask-3 (list url) nil nil url)))))
+      (exco-connect identifier)))
+   ((exco--string-or-string-pair-p excorporate-configuration)
+    ;; A single string or a single pair.
     (exco-connect excorporate-configuration))
-   ((null (consp (cdr excorporate-configuration)))
-    (exco-connect excorporate-configuration))
+   ((consp (cdr excorporate-configuration))
+    ;; A proper list.
+    (dolist (configuration excorporate-configuration)
+      (if (exco--string-or-string-pair-p configuration)
+	  (exco-connect configuration)
+	(warn "Skipping invalid configuration: %s" configuration))))
    (t
     (error "Excorporate: Invalid configuration"))))
 
