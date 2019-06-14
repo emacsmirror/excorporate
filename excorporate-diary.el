@@ -229,6 +229,12 @@ ARGUMENTS are the arguments to `diary-view-entries'."
 	      #'exco-diary-diary-view-entries-override)
   (add-hook 'diary-list-entries-hook #'diary-sort-entries)
   (add-hook 'diary-list-entries-hook #'diary-include-other-diary-files)
+  (unless (eq diary-display-function 'diary-fancy-display)
+    (warn (format
+	   (concat "Excorporate diary support needs diary-fancy-display"
+		   " but diary-display-function is currently %S; overriding")
+	   diary-display-function))
+    (customize-set-variable 'diary-display-function 'diary-fancy-display))
   (appt-activate 1)
   (message "Excorporate diary support enabled."))
 
