@@ -109,6 +109,17 @@ initialize for today's date, nil otherwise."
 	  ;; connnection-callback loop.
 	  (basic-save-buffer-1))))))
 
+;; Literal percent signs (%) are not supported in a diary entry since
+;; they're interpreted as format strings by `diary-sexp-entry', so
+;; encode them during entry insertion, then unescape them during
+;; display.  This is needed so that, e.g., encoded meeting URLs that
+;; contain literal percent signs (%) work with `browse-url'.
+(defun exco-diary--fix-percent-signs ()
+  "Replace percent-sign placeholders with percent signs."
+  (goto-char (point-min))
+  (while (re-search-forward "<EXCO_PERCENT_SIGN>" nil t)
+    (replace-match "%")))
+
 (defun exco-diary-insert-meeting (finalize
 				  subject start _end _location
 				  _main-invitees _optional-invitees
@@ -138,6 +149,14 @@ Call FINALIZE after the meeting has been inserted."
 		   excorporate-diary-transient-file)))
       (with-temp-buffer
 	(insert icalendar-text)
+	;; Escape literal percent signs (%).  Use less-than sign (<)
+	;; and greater-than sign (>) which are forbidden URL
+	;; characters, so that in the plain text diary file,
+	;; percent-encoded URLs become completely invalid rather than
+	;; slightly wrong.
+	(goto-char (point-min))
+	(while (re-search-forward "%" nil t)
+	  (replace-match "<EXCO_PERCENT_SIGN>"))
 	(icalendar-import-buffer file t))))
   (funcall finalize))
 
@@ -229,6 +248,7 @@ ARGUMENTS are the arguments to `diary-view-entries'."
 	      #'exco-diary-diary-view-entries-override)
   (add-hook 'diary-list-entries-hook #'diary-sort-entries)
   (add-hook 'diary-list-entries-hook #'diary-include-other-diary-files)
+  (add-hook 'diary-fancy-display-mode-hook #'exco-diary--fix-percent-signs)
   (unless (eq diary-display-function 'diary-fancy-display)
     (warn (format
 	   (concat "Excorporate diary support needs diary-fancy-display"
@@ -243,6 +263,7 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (interactive)
   (advice-remove #'diary #'exco-diary-diary-around)
   (advice-remove #'diary-view-entries #'exco-diary-diary-view-entries-override)
+  (remove-hook 'diary-fancy-display-mode-hook #'exco-diary--fix-percent-signs)
   (with-current-buffer (find-file-noselect diary-file)
     (dolist (file (list excorporate-diary-transient-file
 			excorporate-diary-today-file))
