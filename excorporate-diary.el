@@ -275,7 +275,7 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (unless (eq diary-display-function 'diary-fancy-display)
     (warn (format
 	   (concat "Excorporate diary support needs diary-fancy-display"
-		   " but diary-display-function is currently %S; overriding")
+		   " but diary-display-function is currently %S")
 	   diary-display-function)))
   (appt-activate 1)
   (message "Excorporate diary support enabled."))
