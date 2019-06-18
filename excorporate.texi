@@ -201,26 +201,26 @@ message about having created a service.
 When this works, it will show a bunch of WSDL (XML) in *Messages*.
 
 @noindent
-Debug the above URL retrievals with (setq url-debug t), and with this
-patch:
+Debug the above URL retrievals with @code{M-:} in an @code{emacs -Q}
+run:
 
 @example
-diff --git a/lisp/url/url-http.el b/lisp/url/url-http.el
-index d49e527..0f1c8ae 100644
---- a/lisp/url/url-http.el
-+++ b/lisp/url/url-http.el
-@@ -869,6 +869,7 @@ url-http-parse-headers
-       (url-handle-content-transfer-encoding))
-     (url-http-debug "Finished parsing HTTP headers: %S" success)
-     (widen)
-+    (url-http-debug "Response: %s" (buffer-string))
-     (goto-char (point-min))
-     success))
-
+(progn
+  (setq url-debug 1)
+  (url-retrieve-synchronously URL-STRING)
+  (dolist (p (seq-filter
+              (lambda (b) (string-match " *http*" (buffer-name b)))
+              (buffer-list)))
+    (message "HTTP result buffer: \"%s\"\n%s"
+             (buffer-name p)
+             (with-current-buffer p (buffer-string))))
+  "check *Messages*")
 @end example
 
 @noindent
-(Beware that HTTP responses are out-of-order with this patch.)
+Beware that HTTP responses can be out-of-order, and that if you set
+@code{url-debug} to a number or @code{t}, Emacs may hang for a while if
+it attempts to print a very large data structure.
 
 @noindent
 Once you're sure the above steps are working, try @code{M-x
