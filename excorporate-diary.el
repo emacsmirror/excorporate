@@ -123,6 +123,15 @@ initialize for today's date, nil otherwise."
     (while (re-search-forward "<EXCO_PERCENT_SIGN>" nil t)
       (replace-match "%"))))
 
+(defun exco-diary-appt-disp-window (min-to-app new-time appt-msg)
+  "Replace Excorporate diary percent signs.
+For MIN-TO-APP, NEW-TIME and APPT-MSG documentation, see
+`appt-disp-window'."
+  (appt-disp-window min-to-app new-time appt-msg)
+  (with-current-buffer (get-buffer-create appt-buffer-name)
+    (let ((inhibit-read-only t))
+      (exco-diary--fix-percent-signs))))
+
 (defun exco-diary-insert-meeting (finalize
 				  subject start _end _location
 				  _main-invitees _optional-invitees
@@ -272,6 +281,14 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (add-hook 'diary-list-entries-hook #'diary-sort-entries)
   (add-hook 'diary-list-entries-hook #'diary-include-other-diary-files)
   (add-hook 'diary-fancy-display-mode-hook #'exco-diary--fix-percent-signs)
+  (unless (eq appt-disp-window-function 'exco-diary-appt-disp-window)
+    (if (eq appt-disp-window-function 'appt-disp-window)
+	;; exco-diary-appt-disp-window is compatible with
+	;; appt-disp-window, so override it.
+	(setq appt-disp-window-function 'exco-diary-appt-disp-window)
+      (warn (format (concat "Excorporate diary support needs appt-disp-window"
+			    " but appt-disp-window-function is currently %S")
+		    appt-disp-window-function))))
   (unless (eq diary-display-function 'diary-fancy-display)
     (warn (format
 	   (concat "Excorporate diary support needs diary-fancy-display"
@@ -286,6 +303,8 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (advice-remove #'diary #'exco-diary-diary-around)
   (advice-remove #'diary-view-entries #'exco-diary-diary-view-entries-override)
   (remove-hook 'diary-fancy-display-mode-hook #'exco-diary--fix-percent-signs)
+  (when (eq appt-disp-window-function 'exco-diary-appt-disp-window)
+    (setq appt-disp-window-function 'appt-disp-window))
   (with-current-buffer (find-file-noselect diary-file)
     (dolist (file (list excorporate-diary-transient-file
 			excorporate-diary-today-file))
