@@ -5,7 +5,7 @@
 ;; Author: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Maintainer: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Created: 2014-09-19
-;; Version: 0.8.2
+;; Version: 0.8.3
 ;; Keywords: calendar
 ;; Homepage: https://www.fitzsim.org/blog/
 ;; Package-Requires: ((emacs "24.1") (fsm "0.2") (soap-client "3.1.4") (url-http-ntlm "2.0.3") (nadvice "0.3"))
