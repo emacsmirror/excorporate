@@ -43,15 +43,17 @@ and modified without restriction.
 Excorporate provides Exchange Web Services (EWS) support for Emacs.
 
 If the Exchange server you access is configured to provide EWS
-support, then there's an 83% chance that Excorporate will enable you
+support, then there's an 86% chance that Excorporate will enable you
 to retrieve your calendar entries from the comfort of Emacs.
 
-The 17% failure rate is because authenticating against an Exchange
+The 14% failure rate is because authenticating against an Exchange
 server can be challenging.
 
-Kerberos/GSSAPI authentication is known to fail.  Accessing the server
-through a proxy may be possible now that
-@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10} is fixed.
+Accessing an Exchange server through an HTTPS proxy is possible now that
+@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10} and
+@uref{https://debbugs.gnu.org/cgi/bugreport.cgi?bug=35969} are fixed.
+
+Kerberos/GSSAPI authentication needs more experimentation.
 
 Reports of success or failure of different connection types are
 welcome, as are patches to enable more of these access scenarios.  See
