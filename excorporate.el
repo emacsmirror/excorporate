@@ -106,6 +106,9 @@
 ;; nadvice.el for GNU ELPA so that Excorporate could continue
 ;; supporting Emacs versions 24.1, 24.2 and 24.3.
 
+;; Collin Day <dcday137@gmail.com> tested and helped debug accessing
+;; Office 365 through an HTTPS proxy.
+
 ;;; Code:
 
 ;; Implementation-visible functions and variables.
