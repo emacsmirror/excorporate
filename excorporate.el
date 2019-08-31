@@ -918,7 +918,7 @@ Examples:
 \"hacker@gnu.org\"
 => Excorporate will attempt to autodiscover the EWS URL
 
-\(\"hacker@gnu.org\" . \"https://mail.gnu.org/ews/exchange.asmx\")
+\(\"hacker@gnu.org\" . \"https://mail.gnu.org/EWS/Exchange.asmx\")
 => Excorporate will use the provided EWS URL
 
 Other Excorporate documentation refers to the email address as
@@ -932,7 +932,7 @@ the \"mail address\", and the EWS URL as the \"service URL\"."
     #2=(cons
 	:tag "Exchange email address and EWS URL (no autodiscovery)"
 	(string :tag "Exchange mail address (e.g., hacker@gnu.org)")
-	(string :tag "EWS URL (e.g., https://mail.gnu.org/ews/exchange.asmx)"))
+	(string :tag "EWS URL (e.g., https://mail.gnu.org/EWS/Exchange.asmx)"))
     (repeat :tag "List of configurations"
 	    (choice #1# #2#))))
 
@@ -960,7 +960,7 @@ ARGUMENT is the prefix argument."
    ((or (equal argument '(4))
 	(eq excorporate-configuration nil))
     ;; Prompt.
-    (let* ((url "https://mail.gnu.org/ews/exchange.asmx")
+    (let* ((url "https://mail.gnu.org/EWS/Exchange.asmx")
 	   (suggestion user-mail-address)
 	   (ask-1 "Exchange mail address: ")
 	   (ask-2 "Attempt settings autodiscovery ('n' for Office 365)?")
