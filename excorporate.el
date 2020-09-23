@@ -659,6 +659,24 @@ PATH is an ordered list of node names."
       (setq values (assoc path-element values)))
     (cdr values)))
 
+(defun exco-calendar-item-appointment-delete (identifier
+					      item-identifier callback)
+  "Delete an appointment.
+IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is the
+item identifier in the form:
+
+(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))
+
+CALLBACK is the callback called with the identifier and
+response."
+  (exco-operate identifier
+  		"DeleteItem"
+  		`(((DeleteType . "MoveToDeletedItems")
+  		   (SendMeetingCancellations . "SendToAllAndSaveCopy")
+  		   (ItemIds ,item-identifier))
+  		  nil nil nil)
+  		callback))
+
 (defun exco-calendar-item-get-details (identifier item-identifier process-item)
   "Query server for details about ITEM-IDENTIFIER.
 IDENTIFIER is the connection identifier.  Call PROCESS-ITEM with
