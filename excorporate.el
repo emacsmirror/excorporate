@@ -659,16 +659,40 @@ PATH is an ordered list of node names."
       (setq values (assoc path-element values)))
     (cdr values)))
 
+(defun exco-calendar-item-appointment-create (identifier
+					      subject body start end callback)
+  "Create an appointment calendar item.
+IDENTIFIER is the connection identifier.
+SUBJECT is a string, the subject of the appointment.
+BODY is a string, the message text of the appointment.
+START is the start date and time in Emacs internal representation.
+END is the end date and time in Emacs internal representation.
+CALLBACK is a callback function called with two arguments,
+IDENTIFIER, the connection identifier for the responding
+connection, and RESPONSE, the server's response to the
+appointment creation."
+  (exco-operate identifier
+		"CreateItem"
+		`(((SendMeetingInvitations . "SendToNone")
+		   (Items
+		    (CalendarItem
+                     (Subject . ,subject)
+		     (Body (BodyType . "Text") ,body)
+                     (Start . ,(exco-format-date-time start))
+                     (End . ,(exco-format-date-time end)))))
+		  nil nil nil nil)
+		callback))
+
 (defun exco-calendar-item-appointment-delete (identifier
 					      item-identifier callback)
   "Delete an appointment.
 IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is the
-item identifier in the form:
-
-(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))
-
-CALLBACK is the callback called with the identifier and
-response."
+item identifier in the form
+\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
+CALLBACK is a callback function called with two arguments,
+IDENTIFIER, the connection identifier for the responding
+connection, and RESPONSE, the server's response to the
+appointment deletion."
   (exco-operate identifier
   		"DeleteItem"
   		`(((DeleteType . "MoveToDeletedItems")
