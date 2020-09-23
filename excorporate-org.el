@@ -52,7 +52,7 @@
       (let ((inhibit-read-only t))
 	(delete-region (point-min) (point-max))
 	(goto-char (point-min))
-	(insert "# Updated...\n"))))
+	(insert "# Updated..."))))
 
 (defun exco-org-format-headline (identifier)
   "Format an Org headline using IDENTIFIER."
