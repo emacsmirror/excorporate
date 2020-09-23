@@ -33,6 +33,45 @@
 (defvar exco-org--temporary-buffers '()
   "A list of per-connection result buffers.")
 
+(defun exco-org--connection-identifier-at-point ()
+  "Return the connection identifier associated with point."
+  (let* ((calendar-headline
+	  (save-excursion (org-up-heading-safe) (org-element-at-point)))
+	 (headline (org-element-property :raw-value calendar-headline)))
+    (string-match "Calendar (\\(.*\\))$" headline)
+    (car (read-from-string (match-string 1 headline)))))
+
+(defun exco-org-delete-appointment ()
+  "Delete the appointment at point."
+  (interactive)
+  (let ((identifier (exco-org--connection-identifier-at-point))
+	(item-identifier
+	 (org-entry-get (car (org-get-property-block)) "Identifier")))
+    (when item-identifier
+      (exco-calendar-item-appointment-delete
+       identifier
+       (car (read-from-string item-identifier))
+       (lambda (identifier response)
+	 (let ((response-code
+		(exco-extract-value '(ResponseMessages
+				      DeleteItemResponseMessage
+				      ResponseCode)
+				    response)))
+	   (if (equal response-code "NoError")
+	       (with-current-buffer (get-buffer-create
+				     excorporate-org-buffer-name)
+		 (save-excursion
+		   (org-back-to-heading)
+		   (let* ((inhibit-read-only t)
+			  (element (org-element-at-point))
+			  (begin (org-element-property :begin element))
+			  (end (org-element-property :end element)))
+		     (kill-region begin end)
+		     (message
+		      "excorporate-org: Successfully deleted appointment"))))
+	     (message "excorporate-org: Failed to delete appointment: %S"
+		      response-code))))))))
+
 (defun exco-org-initialize-buffer ()
   "Add initial text to the destination buffer."
   (setq exco-org--temporary-buffers '())
