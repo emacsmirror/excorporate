@@ -756,28 +756,48 @@ processing is done."
 		   location main-invitees optional-invitees
 		   icalendar-text)))))))
 
-(defun exco-calendar-item-iterate (response callback)
+(defmacro exco-calendar-item-iterate-general (response
+					      callback &rest care-abouts)
   "Iterate through calendar items in RESPONSE, calling CALLBACK on each.
-Returns a list of results from callback.  CALLBACK takes arguments:
+Return a list of results from callback.  CARE-ABOUTS is a list of
+symbols representing the arguments with which CALLBACK should be
+called.  Options are:
 SUBJECT, a string, the subject of the meeting.
 START, the start date and time in Emacs internal representation.
 END, the start date and time in Emacs internal representation.
 LOCATION, the location of the meeting.
-MAIN-INVITEES, a list of strings representing required participants.
-OPTIONAL-INVITEES, a list of strings representing optional participants."
-  (let ((result-list '()))
-    (exco--calendar-item-dolist
-     calendar-item (exco-extract-value '(ResponseMessages
-					 FindItemResponseMessage
-					 RootFolder
-					 Items)
-				       response)
-     ;; Silence byte compiler unused warning.
-     item-identifier
-     (push (funcall callback subject start-internal end-internal
-		    location main-invitees optional-invitees)
-	   result-list))
-    (nreverse result-list)))
+MAIN-INVITEES, a list of strings, email addresses of the required
+participants.
+OPTIONAL-INVITEES, a list of strings, email addresses of optional
+participants.
+ITEM-IDENTIFIER, a structure of the form (ItemId (Id
+. ID-STRING) (ChangeKey . CHANGEKEY-STRING))."
+  `(let ((result-list '()))
+     (exco--calendar-item-dolist
+      calendar-item (exco-extract-value '(ResponseMessages
+					  FindItemResponseMessage
+					  RootFolder
+					  Items)
+					,response)
+      (push (funcall ,callback ,@care-abouts)
+	    result-list))
+     (nreverse result-list)))
+
+(defun exco-calendar-item-iterate (response callback)
+  "Iterate through calendar items in RESPONSE, calling CALLBACK on each.
+Return a list of results from callback.  CALLBACK takes arguments:
+SUBJECT, a string, the subject of the meeting.
+START, the start date and time in Emacs internal representation.
+END, the start date and time in Emacs internal representation.
+LOCATION, the location of the meeting.
+MAIN-INVITEES, a list of strings, email addresses of the required
+participants.
+OPTIONAL-INVITEES, a list of strings, email addresses of optional
+participants."
+  (exco-calendar-item-iterate-general
+   response callback
+   subject start-internal end-internal
+   location main-invitees optional-invitees))
 
 ;; Date-time utility functions.
 (defun exco-extend-timezone (date-time-string)
