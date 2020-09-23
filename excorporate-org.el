@@ -58,11 +58,16 @@
   "Format an Org headline using IDENTIFIER."
   (format "* Calendar (%S)\n" identifier))
 
-(defun exco-org-insert-meeting-headline (subject start-time end-time)
+(defun exco-org-insert-meeting-headline (subject
+					 start-time end-time
+					 &optional item-identifier)
   "Insert and schedule a meeting.
 SUBJECT is the meeting's subject, START-TIME and END-TIME are the
 meeting's start and end times in the same format as is returned
-by `current-time'."
+by `current-time'.  ITEM-IDENTIFIER is the item identifier in the
+form:
+
+(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))"
   (let* ((now (current-time))
 	 (keyword (if (time-less-p now end-time)
 		      "TODO"
@@ -74,6 +79,7 @@ by `current-time'."
     (end-of-line)
     (insert  "--" (format-time-string "<%Y-%m-%d %a %H:%M>" end-time))
     (forward-line)
+    (org-set-property "Identifier" (format "%S" item-identifier))
     (org-insert-time-stamp (current-time) t t "+ Retrieved " "\n")))
 
 (defun exco-org-insert-invitees (invitees)
@@ -98,14 +104,17 @@ by `current-time'."
 			       nil t "  + Date " "\n")))))
 
 (defun exco-org-insert-meeting (subject start end location
-					main-invitees optional-invitees)
+					main-invitees optional-invitees
+					&optional item-identifier)
   "Insert a scheduled meeting.
 SUBJECT is a string, the subject of the meeting.  START is the
 meeting start time in Emacs internal date time format, and END is
 the end of the meeting in the same format.  LOCATION is a string
 representing the location.  MAIN-INVITEES and OPTIONAL-INVITEES
-are the requested participants."
-  (exco-org-insert-meeting-headline subject start end)
+are the requested participants.  ITEM-IDENTIFIER, a pair of
+strings represending the item identifier and the change
+identifier for that item."
+  (exco-org-insert-meeting-headline subject start end item-identifier)
   (insert (format "+ Duration: %d minutes\n"
 		  (round (/ (float-time (time-subtract end start)) 60.0))))
   (insert (format "+ Location: %s\n" location))
@@ -126,11 +135,13 @@ are the requested participants."
   (with-current-buffer (exco-org--identifier-buffer identifier)
     (let ((inhibit-read-only t))
       (org-insert-time-stamp (current-time) t t "  + Last checked " "\n")
-      (exco-calendar-item-iterate
+      (exco-calendar-item-iterate-general
        response (lambda (&rest arguments)
 		  (with-current-buffer (exco-org--identifier-buffer identifier)
 		    (org-mode)
-		    (apply #'exco-org-insert-meeting arguments))))
+		    (apply #'exco-org-insert-meeting arguments)))
+       subject start-internal end-internal
+       location main-invitees optional-invitees item-identifier)
       (goto-char (point-min))
       (if (save-excursion (org-goto-first-child))
 	  (org-sort-entries t ?s)
@@ -147,6 +158,7 @@ are the requested participants."
       (insert "done.\n")
       (dolist (result-buffer (nreverse exco-org--temporary-buffers))
 	(insert-buffer-substring result-buffer)
+	(save-excursion (org-up-heading-safe) (org-cycle-hide-drawers 'all))
 	(kill-buffer result-buffer))
       (setq exco-org--temporary-buffers '()))))
 
