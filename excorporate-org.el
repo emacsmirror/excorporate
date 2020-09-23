@@ -56,7 +56,7 @@
 
 (defun exco-org-format-headline (identifier)
   "Format an Org headline using IDENTIFIER."
-  (format "* Calendar (%s)\n" identifier))
+  (format "* Calendar (%S)\n" identifier))
 
 (defun exco-org-insert-meeting-headline (subject start-time end-time)
   "Insert and schedule a meeting.
