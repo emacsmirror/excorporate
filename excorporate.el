@@ -674,6 +674,88 @@ PATH is an ordered list of node names."
       (setq values (assoc path-element values)))
     (cdr values)))
 
+(defun exco--create-attendee-structure (attendees required)
+  "Convert a list of email addresses to an Attendees structure or nil.
+ATTENDEES is a list of strings, attendee email addresses.
+REQUIRED is t if the structure should represent required
+attendees and nil for optional attendees.
+Return a structure, or nil, suitable for splicing into
+`exco-operate` parameters with ,@."
+  (when attendees
+    (let ((attendee-list '()))
+      (dolist (address attendees)
+	(push `(Attendee (Mailbox (EmailAddress . ,address))) attendee-list))
+      (list (cons (if required 'RequiredAttendees 'OptionalAttendees)
+		  (nreverse attendee-list))))))
+
+(defun exco-calendar-item-meeting-create (identifier
+					  subject body start end location
+					  main-invitees optional-invitees
+					  callback)
+  "Create a meeting calendar item.
+IDENTIFIER is the connection identifier.
+SUBJECT is a string, the subject of the appointment.
+BODY is a string, the message text of the appointment.
+START is the start date and time in Emacs internal representation.
+END is the end date and time in Emacs internal representation.
+LOCATION is a string representing the location of the meeting.
+MAIN-INVITEES is a list of strings representing required
+participants.
+OPTIONAL-INVITEES is a list of strings representing optional
+participants
+CALLBACK is a callback function called with two arguments,
+IDENTIFIER, the connection identifier for the responding
+connection, and RESPONSE, the server's response to the meeting
+creation."
+  (exco-operate
+   identifier
+   "CreateItem"
+   `(((SendMeetingInvitations . "SendToAllAndSaveCopy")
+      (Items
+       (CalendarItem
+	(Subject . ,subject)
+	(Body (BodyType . "Text") ,body)
+        (Start . ,(exco-format-date-time start))
+        (End . ,(exco-format-date-time end))
+        (Location . ,location)
+	,@(exco--create-attendee-structure main-invitees t)
+	,@(exco--create-attendee-structure optional-invitees nil))))
+     ;; Empty arguments.
+     ,@(let* ((wsdl (exco--with-fsm identifier
+                      (plist-get (fsm-get-state-data fsm) :service-wsdl)))
+              (arity (soap-operation-arity wsdl
+                                           "ExchangeServicePort"
+                                           "CreateItem")))
+         (make-list (- arity 1) nil)))
+   callback))
+
+(defun exco-calendar-item-meeting-cancel (identifier
+					  item-identifier message callback)
+  "Cancel a meeting.
+IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is the
+meeting identifier.  MESSAGE is the body of the cancellation
+message that will be sent to attendees.  CALLBACK is a callback
+function called with two arguments, IDENTIFIER, the connection
+identifier for the responding connection, and RESPONSE, the
+server's response to the meeting cancellation."
+  (exco-operate
+   identifier
+   "CreateItem"
+   `(((MessageDisposition . "SendAndSaveCopy")
+      (Items
+       (CancelCalendarItem
+	(ReferenceItemId ,@(cdr item-identifier))
+	(NewBodyContent (BodyType . "Text") ,message))))
+     ;; Empty arguments.
+     ,@(let* ((wsdl (exco--with-fsm identifier
+                      (plist-get (fsm-get-state-data fsm)
+                                 :service-wsdl)))
+              (arity (soap-operation-arity wsdl
+                                           "ExchangeServicePort"
+                                           "CreateItem")))
+         (make-list (- arity 1) nil)))
+   callback))
+
 (defun exco-calendar-item-appointment-create (identifier
 					      subject body start end callback)
   "Create an appointment calendar item.
