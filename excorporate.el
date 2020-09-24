@@ -818,12 +818,10 @@ appointment creation."
 (defun exco-calendar-item-appointment-delete (identifier
 					      item-identifier callback)
   "Delete an appointment.
-IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is the
-item identifier in the form
-\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
-CALLBACK is a callback function called with two arguments,
-IDENTIFIER, the connection identifier for the responding
-connection, and RESPONSE, the server's response to the
+IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is an
+opaque item identifier.  CALLBACK is a callback function called
+with two arguments, IDENTIFIER, the connection identifier for the
+responding connection, and RESPONSE, the server's response to the
 appointment deletion."
   (exco-operate identifier
   		"DeleteItem"
@@ -947,10 +945,10 @@ MAIN-INVITEES, a list of strings, email addresses of the required
 participants.
 OPTIONAL-INVITEES, a list of strings, email addresses of optional
 participants.
-ITEM-IDENTIFIER, a structure of the form
-\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
 ORGANIZER, a string representing the email address of the
 organizer of the meeting, in server-internal format."
+ITEM-IDENTIFIER, a structure representing the calendar item.  It
+should be treated as opaque.
   `(let ((result-list '()))
      (exco--calendar-item-dolist
       calendar-item (exco-extract-value '(ResponseMessages
