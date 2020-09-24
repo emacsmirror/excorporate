@@ -41,6 +41,12 @@
     (string-match "Calendar (\\(.*\\))$" headline)
     (car (read-from-string (match-string 1 headline)))))
 
+(defun exco-org--item-identifier-at-point ()
+  "Return the item identifier associated with point."
+  (car
+   (read-from-string
+   (org-entry-get (car (org-get-property-block)) "Identifier"))))
+
 (defun exco-org--is-meeting ()
   "Return t if the entry at point is a meeting, not an appointment."
   (save-excursion
@@ -78,6 +84,32 @@
      (t
       (error "Did not recognize error")))))
 
+(defmacro exco-org--handle-response (response
+				     response-type success failure &rest forms)
+  "Handle a server response RESPONSE.
+RESPONSE-TYPE is one of CreateItemResponseMessage or
+DeleteItemResponseMessage.  SUCCESS and FAILURE are strings added
+to the success and failure messages to the user.  FORMS are what
+to do, starting from point being in the calendar entry being
+operated on."
+  `(let ((response-code (exco-extract-value '(ResponseMessages
+					      ,response-type
+					      ResponseCode)
+					    ,response)))
+       (if (equal response-code "NoError")
+	   (progn ,@forms (message "excorporate-org: Successfully %s" ,success))
+	 (message "excorporate-org: Failed to %s: %S" ,failure ,response))))
+
+(defun exco-org--remove-element ()
+  "Remove the element at point."
+  (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
+    (save-excursion
+      (org-back-to-heading)
+      (let* ((inhibit-read-only t)
+	     (element (org-element-at-point))
+	     (begin (org-element-property :begin element))
+	     (end (org-element-property :end element)))
+	(delete-region begin end)))))
 (defun exco-org-cancel-meeting ()
   "Cancel the meeting at point, prompting for a cancellation message."
   (interactive)
@@ -85,8 +117,7 @@
     (error (concat "This looks like an appointment,"
 		   " try `exco-org-delete-appointment' instead.")))
   (let ((identifier (exco-org--connection-identifier-at-point))
-	(item-identifier
-	 (org-entry-get (car (org-get-property-block)) "Identifier")))
+	(item-identifier (exco-org--item-identifier-at-point)))
     ;; Make sure the meeting owner matches the connection owner before
     ;; attempting to cancel the meeting.
     (unless (exco-org--organizer-matches-connection)
@@ -94,29 +125,13 @@
 		     " meetings for which you are the organizer")))
     (when item-identifier
       (exco-calendar-item-meeting-cancel
-       identifier
-       (car (read-from-string item-identifier))
+       identifier item-identifier
        (read-from-minibuffer "Cancellation message: ")
        (lambda (identifier response)
-	 (let ((response-code
-		(exco-extract-value '(ResponseMessages
-				      CreateItemResponseMessage
-				      ResponseCode)
-				    response)))
-	   (if (equal response-code "NoError")
-	       (with-current-buffer (get-buffer-create
-				     excorporate-org-buffer-name)
-		 (save-excursion
-		   (org-back-to-heading)
-		   (let* ((inhibit-read-only t)
-			  (element (org-element-at-point))
-			  (begin (org-element-property :begin element))
-			  (end (org-element-property :end element)))
-		     (kill-region begin end)
-		     (message
-		      "excorporate-org: Successfully cancelled meeting"))))
-	     (message "excorporate-org: Failed to cancel meeting: %S"
-		      response-code))))))))
+	 (exco-org--handle-response
+	  response CreateItemResponseMessage
+	  "cancelled meeting" "cancel meeting"
+	  (exco-org--remove-element)))))))
 
 (defun exco-org-delete-appointment ()
   "Delete the appointment at point."
@@ -124,32 +139,15 @@
   (when (exco-org--is-meeting)
     (error "This looks like a meeting, try `exco-org-cancel-meeting' instead"))
   (let ((identifier (exco-org--connection-identifier-at-point))
-	(item-identifier
-	 (org-entry-get (car (org-get-property-block)) "Identifier")))
+	(item-identifier (exco-org--item-identifier-at-point)))
     (when item-identifier
       (exco-calendar-item-appointment-delete
-       identifier
-       (car (read-from-string item-identifier))
+       identifier item-identifier
        (lambda (identifier response)
-	 (let ((response-code
-		(exco-extract-value '(ResponseMessages
-				      DeleteItemResponseMessage
-				      ResponseCode)
-				    response)))
-	   (if (equal response-code "NoError")
-	       (with-current-buffer (get-buffer-create
-				     excorporate-org-buffer-name)
-		 (save-excursion
-		   (org-back-to-heading)
-		   (let* ((inhibit-read-only t)
-			  (element (org-element-at-point))
-			  (begin (org-element-property :begin element))
-			  (end (org-element-property :end element)))
-		     (kill-region begin end)
-		     (message
-		      "excorporate-org: Successfully deleted appointment"))))
-	     (message "excorporate-org: Failed to delete appointment: %S"
-		      response-code))))))))
+	 (exco-org--handle-response
+	  response DeleteItemResponseMessage
+	  "deleted appointment" "delete appointment"
+	  (exco-org--remove-element)))))))
 
 (defun exco-org-initialize-buffer ()
   "Add initial text to the destination buffer."
