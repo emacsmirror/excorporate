@@ -768,7 +768,10 @@ On each iteration, ITEM is set, and FORMS are run."
 	    (optional-invitees (when cc-invitees
 				 (mapcar 'org-trim
 					 (split-string cc-invitees ";"))))
-	    (item-identifier (assoc 'ItemId ,item)))
+	    (item-identifier (assoc 'ItemId ,item))
+	    (organizer (cdr (assoc 'EmailAddress
+				   (assoc 'Mailbox
+					  (assoc 'Organizer ,item))))))
        ,@forms)))
 
 (defun exco-calendar-item-with-details-iterate (identifier
@@ -827,8 +830,10 @@ MAIN-INVITEES, a list of strings, email addresses of the required
 participants.
 OPTIONAL-INVITEES, a list of strings, email addresses of optional
 participants.
-ITEM-IDENTIFIER, a structure of the form (ItemId (Id
-. ID-STRING) (ChangeKey . CHANGEKEY-STRING))."
+ITEM-IDENTIFIER, a structure of the form
+\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
+ORGANIZER, a string representing the email address of the
+organizer of the meeting, in server-internal format."
   `(let ((result-list '()))
      (exco--calendar-item-dolist
       calendar-item (exco-extract-value '(ResponseMessages
