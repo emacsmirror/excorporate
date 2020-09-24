@@ -41,9 +41,88 @@
     (string-match "Calendar (\\(.*\\))$" headline)
     (car (read-from-string (match-string 1 headline)))))
 
+(defun exco-org--is-meeting ()
+  "Return t if the entry at point is a meeting, not an appointment."
+  (save-excursion
+    (org-back-to-heading)
+    (let ((element (org-element-at-point)))
+      ;; Rule out top Calendar item.
+      (when (equal (org-element-property :level element) 2)
+	(not (null
+	      (re-search-forward
+	     "^\+ Invitees:$"
+	     (org-element-property :end (org-element-at-point)) t)))))))
+
+(defun exco-org--organizer ()
+  "Return a string representing the item at point's organizer."
+  (save-excursion
+    (org-back-to-heading)
+    (let* ((element (org-element-at-point))
+	   (begin (org-element-property :begin element))
+	   (end (org-element-property :end element))
+	   (entry-text (buffer-substring-no-properties begin end)))
+      ;; Rule out top Calendar item.
+      (when (equal (org-element-property :level element) 2)
+	(string-match "^+ Organizer: \\(.*\\)$" entry-text)
+	(match-string 1 entry-text)))))
+
+(defun exco-org--organizer-matches-connection ()
+  "Return non-nil if the entry at point is owned by the connection owner."
+  (let ((identifier (exco-org--connection-identifier-at-point))
+	(organizer (exco-org--organizer)))
+    (cond
+     ((stringp identifier)
+      (equal identifier organizer))
+     ((consp identifier)
+      (equal (car identifier) organizer))
+     (t
+      (error "Did not recognize error")))))
+
+(defun exco-org-cancel-meeting ()
+  "Cancel the meeting at point, prompting for a cancellation message."
+  (interactive)
+  (unless (exco-org--is-meeting)
+    (error (concat "This looks like an appointment,"
+		   " try `exco-org-delete-appointment' instead.")))
+  (let ((identifier (exco-org--connection-identifier-at-point))
+	(item-identifier
+	 (org-entry-get (car (org-get-property-block)) "Identifier")))
+    ;; Make sure the meeting owner matches the connection owner before
+    ;; attempting to cancel the meeting.
+    (unless (exco-org--organizer-matches-connection)
+      (error (concat "exco-org will only attempt to delete"
+		     " meetings for which you are the organizer")))
+    (when item-identifier
+      (exco-calendar-item-meeting-cancel
+       identifier
+       (car (read-from-string item-identifier))
+       (read-from-minibuffer "Cancellation message: ")
+       (lambda (identifier response)
+	 (let ((response-code
+		(exco-extract-value '(ResponseMessages
+				      CreateItemResponseMessage
+				      ResponseCode)
+				    response)))
+	   (if (equal response-code "NoError")
+	       (with-current-buffer (get-buffer-create
+				     excorporate-org-buffer-name)
+		 (save-excursion
+		   (org-back-to-heading)
+		   (let* ((inhibit-read-only t)
+			  (element (org-element-at-point))
+			  (begin (org-element-property :begin element))
+			  (end (org-element-property :end element)))
+		     (kill-region begin end)
+		     (message
+		      "excorporate-org: Successfully cancelled meeting"))))
+	     (message "excorporate-org: Failed to cancel meeting: %S"
+		      response-code))))))))
+
 (defun exco-org-delete-appointment ()
   "Delete the appointment at point."
   (interactive)
+  (when (exco-org--is-meeting)
+    (error "This looks like a meeting, try `exco-org-cancel-meeting' instead"))
   (let ((identifier (exco-org--connection-identifier-at-point))
 	(item-identifier
 	 (org-entry-get (car (org-get-property-block)) "Identifier")))
@@ -104,9 +183,7 @@
 SUBJECT is the meeting's subject, START-TIME and END-TIME are the
 meeting's start and end times in the same format as is returned
 by `current-time'.  ITEM-IDENTIFIER is the item identifier in the
-form:
-
-(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))"
+form (ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))."
   (let* ((now (current-time))
 	 (keyword (if (time-less-p now end-time)
 		      "TODO"
@@ -143,26 +220,44 @@ form:
 			       nil t "  + Date " "\n")))))
 
 (defun exco-org-insert-meeting (subject start end location
-					main-invitees optional-invitees
-					&optional item-identifier)
+				main-invitees optional-invitees
+				&optional item-identifier organizer identifier)
   "Insert a scheduled meeting.
 SUBJECT is a string, the subject of the meeting.  START is the
 meeting start time in Emacs internal date time format, and END is
 the end of the meeting in the same format.  LOCATION is a string
 representing the location.  MAIN-INVITEES and OPTIONAL-INVITEES
-are the requested participants.  ITEM-IDENTIFIER, a pair of
-strings represending the item identifier and the change
-identifier for that item."
-  (exco-org-insert-meeting-headline subject start end item-identifier)
-  (insert (format "+ Duration: %d minutes\n"
-		  (round (/ (float-time (time-subtract end start)) 60.0))))
-  (insert (format "+ Location: %s\n" location))
-  (when main-invitees
-    (insert "+ Invitees:\n")
-    (exco-org-insert-invitees main-invitees))
-  (when optional-invitees
-    (insert "+ Optional invitees:\n")
-    (exco-org-insert-invitees optional-invitees)))
+are the requested participants.  ITEM-IDENTIFIER is the item
+identifier in the form
+\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
+ORGANIZER is a string containing the organizer of the meeting, in
+server-internal form.  IDENTIFIER is the connection identifier."
+  ;; The Organizer email is in the server's internal format.  Resolve
+  ;; it synchronously, for simplicity.
+  (let ((organizer-email-address
+	 (exco-extract-value
+	  '(ResponseMessages
+	    ResolveNamesResponseMessage
+	    ResolutionSet
+	    Resolution
+	    Mailbox
+	    EmailAddress)
+	  (with-timeout
+	      (1 (error "Server did not respond in time"))
+	    (exco-operate-synchronously
+	     identifier "ResolveNames"
+	     `(((UnresolvedEntry . ,organizer)) nil nil nil))))))
+    (exco-org-insert-meeting-headline subject start end item-identifier)
+    (insert (format "+ Duration: %d minutes\n"
+		    (round (/ (float-time (time-subtract end start)) 60.0))))
+    (insert (format "+ Location: %s\n" location))
+    (insert (format "+ Organizer: %s\n" organizer-email-address))
+    (when main-invitees
+      (insert "+ Invitees:\n")
+      (exco-org-insert-invitees main-invitees))
+    (when optional-invitees
+      (insert "+ Optional invitees:\n")
+      (exco-org-insert-invitees optional-invitees))))
 
 (defun exco-org-insert-meetings (identifier response)
   "Insert the connection IDENTIFIER's meetings from RESPONSE."
@@ -178,9 +273,12 @@ identifier for that item."
        response (lambda (&rest arguments)
 		  (with-current-buffer (exco-org--identifier-buffer identifier)
 		    (org-mode)
-		    (apply #'exco-org-insert-meeting arguments)))
+		    (apply #'exco-org-insert-meeting
+			   ;; Gross, but keeps exco-org-insert-meeting
+			   ;; signature backward compatible.
+			   (append arguments (list identifier)))))
        subject start-internal end-internal
-       location main-invitees optional-invitees item-identifier)
+       location main-invitees optional-invitees item-identifier organizer)
       (goto-char (point-min))
       (if (save-excursion (org-goto-first-child))
 	  (org-sort-entries t ?s)
