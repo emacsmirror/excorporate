@@ -729,6 +729,41 @@ creation."
          (make-list (- arity 1) nil)))
    callback))
 
+(defun exco-calendar-item-meeting-reply (identifier
+					 item-identifier message acceptance
+					 callback)
+  "Reply to a meeting request.
+IDENTIFIER is the connection identifier.  ITEM-IDENTIFIER is the
+meeting identifier.  MESSAGE is the body of the reply message
+that will be sent to attendees, or nil to omit the message.
+ACCEPTANCE is a symbol representing the type of reply, one of
+`accept', `tentatively-accect' or `decline'.  CALLBACK is a
+callback function called with two arguments, IDENTIFIER, the
+connection identifier for the responding connection, and
+RESPONSE, the server's response to the meeting cancellation."
+  (let ((acceptance-symbol (cl-ecase acceptance
+			     (accept 'AcceptItem)
+			     (tentatively-accept 'TentativelyAcceptItem)
+			     (decline 'DeclineItem))))
+    (exco-operate
+     identifier
+     "CreateItem"
+     `(((MessageDisposition . "SendAndSaveCopy")
+	(Items
+	 (,acceptance-symbol
+	  (Sensitivity . "Private")
+	  (ReferenceItemId ,@(cdr item-identifier))
+	  ,@(when message (list `(Body (BodyType . "Text") ,message))))))
+       ;; Empty arguments.
+       ,@(let* ((wsdl (exco--with-fsm identifier
+			(plist-get (fsm-get-state-data fsm)
+                                   :service-wsdl)))
+		(arity (soap-operation-arity wsdl
+                                             "ExchangeServicePort"
+                                             "CreateItem")))
+           (make-list (- arity 1) nil)))
+     callback)))
+
 (defun exco-calendar-item-meeting-cancel (identifier
 					  item-identifier message callback)
   "Cancel a meeting.
