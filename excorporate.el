@@ -861,6 +861,38 @@ argument ICALENDAR-TEXT."
 						  mime-path response)))
 					   coding-system))))))
 
+;; The organizer email is in the server's internal "EX" format.
+;; Resolve it synchronously, for simplicity.
+(defun exco-organizer-smtp-email-address (identifier organizer-structure)
+  "Return the organizer's SMTP email address as a string.
+IDENTIFIER is the connection identifier to use to resolve
+ORGANIZER-STRUCTURE to the returned value.  ORGANIZER-STRUCTURE
+should be treated as opaque."
+  (let* ((wrapped (list (list organizer-structure)))
+	 (routing-type
+	  (exco-extract-value '(Organizer Mailbox RoutingType) wrapped))
+	 (email-address
+	  (exco-extract-value '(Organizer Mailbox EmailAddress) wrapped)))
+    (cond
+     ((equal routing-type "EX")
+      (exco-extract-value
+       '(ResponseMessages
+	 ResolveNamesResponseMessage
+	 ResolutionSet
+	 Resolution
+	 Mailbox
+	 EmailAddress)
+       (with-timeout
+	   (2 (progn
+		(message (concat "exco-organizer-smtp-email-address:"
+				 " Server did not respond in time"))
+		nil))
+	 (exco-operate-synchronously identifier
+				     "ResolveNames"
+				     `(((UnresolvedEntry . ,email-address))
+				       nil nil nil)))))
+     ((equal routing-type "SMTP") email-address))))
+
 (defmacro exco--calendar-item-dolist (item items &rest forms)
   "Iterate through ITEMS.
 On each iteration, ITEM is set, and FORMS are run."
