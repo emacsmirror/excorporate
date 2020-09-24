@@ -180,8 +180,8 @@ operated on."
   "Insert and schedule a meeting.
 SUBJECT is the meeting's subject, START-TIME and END-TIME are the
 meeting's start and end times in the same format as is returned
-by `current-time'.  ITEM-IDENTIFIER is the item identifier in the
-form (ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))."
+by `current-time'.  ITEM-IDENTIFIER is the opaque item
+identifier."
   (let* ((now (current-time))
 	 (keyword (if (time-less-p now end-time)
 		      "TODO"
@@ -219,43 +219,26 @@ form (ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING))."
 
 (defun exco-org-insert-meeting (subject start end location
 				main-invitees optional-invitees
-				&optional item-identifier organizer identifier)
+				&optional item-identifier organizer)
   "Insert a scheduled meeting.
 SUBJECT is a string, the subject of the meeting.  START is the
 meeting start time in Emacs internal date time format, and END is
 the end of the meeting in the same format.  LOCATION is a string
 representing the location.  MAIN-INVITEES and OPTIONAL-INVITEES
-are the requested participants.  ITEM-IDENTIFIER is the item
-identifier in the form
-\(ItemId (Id . ID-STRING) (ChangeKey . CHANGEKEY-STRING)).
-ORGANIZER is a string containing the organizer of the meeting, in
-server-internal form.  IDENTIFIER is the connection identifier."
-  ;; The Organizer email is in the server's internal format.  Resolve
-  ;; it synchronously, for simplicity.
-  (let ((organizer-email-address
-	 (exco-extract-value
-	  '(ResponseMessages
-	    ResolveNamesResponseMessage
-	    ResolutionSet
-	    Resolution
-	    Mailbox
-	    EmailAddress)
-	  (with-timeout
-	      (1 (error "Server did not respond in time"))
-	    (exco-operate-synchronously
-	     identifier "ResolveNames"
-	     `(((UnresolvedEntry . ,organizer)) nil nil nil))))))
-    (exco-org-insert-meeting-headline subject start end item-identifier)
+are the requested participants.  ITEM-IDENTIFIER is the opaque
+item identifier.  ORGANIZER is a string, the email address of the
+meeting organizer."
+  (exco-org-insert-meeting-headline subject start end item-identifier)
     (insert (format "+ Duration: %d minutes\n"
 		    (round (/ (float-time (time-subtract end start)) 60.0))))
     (insert (format "+ Location: %s\n" location))
-    (insert (format "+ Organizer: %s\n" organizer-email-address))
+    (insert (format "+ Organizer: %s\n" organizer))
     (when main-invitees
       (insert "+ Invitees:\n")
       (exco-org-insert-invitees main-invitees))
     (when optional-invitees
       (insert "+ Optional invitees:\n")
-      (exco-org-insert-invitees optional-invitees))))
+      (exco-org-insert-invitees optional-invitees)))
 
 (defun exco-org-insert-meetings (identifier response)
   "Insert the connection IDENTIFIER's meetings from RESPONSE."
@@ -271,12 +254,14 @@ server-internal form.  IDENTIFIER is the connection identifier."
        response (lambda (&rest arguments)
 		  (with-current-buffer (exco-org--identifier-buffer identifier)
 		    (org-mode)
-		    (apply #'exco-org-insert-meeting
-			   ;; Gross, but keeps exco-org-insert-meeting
-			   ;; signature backward compatible.
-			   (append arguments (list identifier)))))
+		    (let ((new-arguments arguments))
+		      (setf (nth 7 new-arguments)
+			    (exco-organizer-smtp-email-address
+			     identifier organizer-structure))
+		      (apply #'exco-org-insert-meeting new-arguments))))
        subject start-internal end-internal
-       location main-invitees optional-invitees item-identifier organizer)
+       location main-invitees optional-invitees item-identifier
+       organizer-structure)
       (goto-char (point-min))
       (if (save-excursion (org-goto-first-child))
 	  (org-sort-entries t ?s)
