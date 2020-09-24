@@ -136,7 +136,7 @@ message."
 	  (item-identifier (exco-org--item-identifier-at-point)))
       (exco-calendar-item-meeting-reply
        identifier item-identifier message acceptance
-       (lambda (identifier response)
+       (lambda (_identifier response)
 	 (exco-org--handle-response response CreateItemResponseMessage
 				    success failure))))))
 
@@ -178,7 +178,7 @@ text."
       (exco-calendar-item-meeting-cancel
        identifier item-identifier
        (read-from-minibuffer "Cancellation message: ")
-       (lambda (identifier response)
+       (lambda (_identifier response)
 	 (exco-org--handle-response
 	  response CreateItemResponseMessage
 	  "cancelled meeting" "cancel meeting"
@@ -194,7 +194,7 @@ text."
     (when item-identifier
       (exco-calendar-item-appointment-delete
        identifier item-identifier
-       (lambda (identifier response)
+       (lambda (_identifier response)
 	 (exco-org--handle-response
 	  response DeleteItemResponseMessage
 	  "deleted appointment" "delete appointment"
