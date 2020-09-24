@@ -560,20 +560,26 @@ the FSM should transition to on success."
   (list state-data nil))
 
 (define-state exco--fsm :retrieving-data
-  (_fsm state-data event _callback)
+  (_fsm state-data event fsm-result-callback)
   (let* ((identifier (plist-get state-data :identifier))
 	 (wsdl (plist-get state-data :service-wsdl))
 	 (name (pop event))
 	 (arguments (pop event))
 	 (callback (pop event)))
-    (apply #'soap-invoke-async
-	   (lambda (response)
-	     (funcall callback identifier response))
-	   nil
-	   wsdl
-	   "ExchangeServicePort"
-	   name
-	   arguments))
+    (if callback
+	;; exco-operate.
+	(apply #'soap-invoke-async
+	       (lambda (response)
+		 (funcall callback identifier response))
+	       nil
+	       wsdl
+	       "ExchangeServicePort"
+	       name
+	       arguments)
+      ;; exco-operate-synchronously.
+      (funcall
+       fsm-result-callback
+       (apply #'soap-invoke wsdl "ExchangeServicePort" name arguments))))
   (list :retrieving-data state-data nil))
 
 (defun exco--ensure-connection ()
@@ -631,9 +637,18 @@ use the `cdr' of the pair as the service URL."
 IDENTIFIER is the connection identifier.  Execute operation NAME
 with ARGUMENTS then call CALLBACK with two arguments, IDENTIFIER
 and the server's response."
+  (when (null callback) (error "CALLBACK cannot be nil"))
   (exco--with-fsm identifier
     (fsm-send fsm (list name arguments callback)))
   nil)
+
+(defun exco-operate-synchronously (identifier name arguments)
+  "Execute a service operation synchronously.
+IDENTIFIER is the connection identifier.  Execute operation NAME
+with ARGUMENTS then call CALLBACK with two arguments, IDENTIFIER
+and the server's response."
+  (exco--with-fsm identifier
+    (fsm-call fsm (list name arguments))))
 
 (defun exco-server-version (identifier)
   "Return the server version for connection IDENTIFIER, as a string.
