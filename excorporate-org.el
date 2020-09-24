@@ -110,6 +110,57 @@ operated on."
 	     (begin (org-element-property :begin element))
 	     (end (org-element-property :end element)))
 	(delete-region begin end)))))
+
+(defun exco-org--reply-to-meeting (acceptance prompt-for-message)
+  "Reply to a meeting.
+ACCEPTANCE is a symbol, one of `accept', `tentatively-accept', or
+`decline'.  PROMPT-FOR-MESSAGE is non-nil to prompt the user for
+a message to include in the reply or nil to not include a
+message."
+  (let (prompt success failure)
+    (cl-ecase acceptance
+      (accept
+       (setq prompt "Acceptance message: ")
+       (setq success "accepted")
+       (setq failure "accept"))
+      (tentatively-accept
+       (setq prompt "Tentative acceptance message: ")
+       (setq success "accepted tentatively")
+       (setq failure "accept tentatively"))
+      (decline
+       (setq prompt "Declination message: ")
+       (setq success "declined")
+       (setq failure "decline")))
+    (let ((message (when prompt-for-message (read-from-minibuffer prompt)))
+	  (identifier (exco-org--connection-identifier-at-point))
+	  (item-identifier (exco-org--item-identifier-at-point)))
+      (exco-calendar-item-meeting-reply
+       identifier item-identifier message acceptance
+       (lambda (identifier response)
+	 (exco-org--handle-response response CreateItemResponseMessage
+				    success failure))))))
+
+(defun exco-org-accept-meeting-request (&optional argument)
+  "Accept the meeting at point.
+With a prefix argument, ARGUMENT, prompts for response message
+text."
+  (interactive "P")
+  (exco-org--reply-to-meeting 'accept argument))
+
+(defun exco-org-decline-meeting-request (&optional argument)
+  "Decline the meeting at point.
+With a prefix argument, ARGUMENT, prompts for response message
+text."
+  (interactive "P")
+  (exco-org--reply-to-meeting 'decline argument))
+
+(defun exco-org-tentatively-accept-meeting-request (&optional argument)
+  "Tentatively accept the meeting at point.
+With a prefix argument, ARGUMENT, prompts for response message
+text."
+  (interactive "P")
+  (exco-org--reply-to-meeting 'tentatively-accept argument))
+
 (defun exco-org-cancel-meeting ()
   "Cancel the meeting at point, prompting for a cancellation message."
   (interactive)
