@@ -60,12 +60,21 @@ welcome, as are patches to enable more of these access scenarios.  See
 @pxref{Reporting Bugs}.
 
 @menu
+* Reporting Bugs::              How to report bugs in Excorporate
 * Installation::                Getting and installing @code{excorporate}.
 * Configuration::               Configuring @code{excorporate}.
 * Usage::                       Using @code{excorporate}.
 * Troubleshooting::             Debugging why a connection failed
-* Reporting Bugs::              Reporting bugs
+* API Usage::                   Using the API provided by @code{excorporate}.
 @end menu
+
+@node Reporting Bugs
+@chapter Reporting Bugs
+
+@noindent
+To report a bug, send an email to @code{bug-gnu-emacs@@gnu.org} using
+your favourite email program.  Put ``Excorporate'' somewhere in the
+subject line, for example: ``Excorporate: Failed to authenticate''.
 
 @node Installation
 @chapter Installation
@@ -266,11 +275,127 @@ asynchronous Exchange access: a state machine (@code{fsm}), TLS
 negotiation (@code{gnutls}), NTLM authentication (@code{ntlm} and
 @code{url-http-ntlm}) and SOAP communication (@code{soap-client}).
 
-@node Reporting Bugs
-@chapter Reporting Bugs
+@node API Usage
+@chapter API Usage
 
 @noindent
-To report a bug, use @code{M-x report-emacs-bug}, and put Excorporate
-somewhere in the subject.
+Here are some examples of using the API (application programming
+interface) provided by Excorporate.
+
+@noindent
+Not all of Excorporate's functionality is exposed as interactive
+functions.  Here is an example of creating a meeting to which
+hacker2@@gnu.org is invited, using a non-interactive function provided by
+Excorporate:
+
+@example
+@group
+(exco-calendar-item-meeting-create
+ (car exco--connection-identifiers)
+ "Test meeting 1"
+ "Hi,\n\nThis is a test meeting 1.\n\nRegards.\n"
+ (encode-time 0 15 14 23 09 2020)
+ (encode-time 0 0  15 23 09 2020)
+ "Online only"
+ '("hacker2@@gnu.org") nil
+ (lambda (identifier response)
+   (message "%S: %S" identifier response)))
+@result{} ("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((ResponseMessages (CreateItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]M"))))))))
+@end group
+@end example
+
+@noindent
+The callback is run asychronously after the server responds, so as not
+to block Emacs, and the result is what is printed in the
+@code{*Messages*} buffer.  This example assumes the user has already run
+@kbd{M-x excorporate} to create a connection.  @code{(car
+exco--connection-identifiers)} is a hack that uses the first-established
+connection.  Excorporate fully supports connecting to multiple different
+servers though (see @code{exco-connection-iterate}) so published code
+that uses the Excorporate API should not assume just one connection.
+
+@noindent
+There is lots of server-side functionality that Excorporate does not
+provide high-level non-interactive functions for.  Using that
+functionality is still possible with the low-level @code{exco-operate}
+and @code{exco-operate-synchronously} functions.
+
+@noindent
+For example, evaluating this form produces lots of details about the
+meeting represented by the ItemId form, including tidbits like the list
+of invitees and how they've responded (accepted, declined, tentatively
+accepted, unknown).  You can find ItemId forms to experiment with in the
+PROPERTIES drawer of calendar entries in the interactive Org buffer.
+
+@example
+@group
+(exco-operate-synchronously
+  (car exco--connection-identifiers)
+  "GetItem"
+  '(((ItemShape (BaseShape . "AllProperties"))
+     (ItemIds (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]d"))))
+    nil nil nil nil nil nil))
+@result{} (((ResponseMessages (GetItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem ...))))))
+@end group
+@end example
+
+@noindent
+Note that this function is synchronous.  This is nice for experimenting
+with, for example, in an IELM REPL, but published code should mostly use
+the asynchronous calls to avoid blocking Emacs during server operations.
+
+@noindent
+Here is a more complicated example that asynchronously queries the
+server for availability overlap for hacker1@@gnu.org and hacker2@@gnu.org,
+in the Eastern Time Zone.
+
+@example
+@group
+(exco-operate
+ (car exco--connection-identifiers)
+ "GetUserAvailability"
+ '(((TimeZone
+     (Bias . 300)
+     (StandardTime
+      (Bias . 0)
+      (Time . "02:00:00")
+      (DayOrder . 1)
+      (Month . 11)
+      (DayOfWeek . "Sunday"))
+     (DaylightTime
+      (Bias . -60)
+      (Time . "02:00:00")
+      (DayOrder . 2)
+      (Month . 3)
+      (DayOfWeek . "Sunday")))
+    (MailboxDataArray
+     (MailboxData
+      (Email
+       (Address . "hacker1@@gnu.org"))
+      (AttendeeType . "Required")
+      (ExcludeConflicts . nil))
+     (MailboxData
+      (Email
+       (Address . "hacker2@@gnu.org"))
+      (AttendeeType . "Required")
+      (ExcludeConflicts . nil)))
+    (FreeBusyViewOptions
+     (TimeWindow
+      (StartTime . "2020-09-25T00:00:00Z")
+      (EndTime . "2020-09-25T23:59:00Z"))
+     (MergedFreeBusyIntervalInMinutes . 60)
+     (RequestedView "DetailedMerged")))
+   nil nil nil)
+ (lambda (identifier response)
+   (message "%S: %S" identifier response)))
+@result{} ("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((FreeBusyResponseArray (FreeBusyResponse ... ) ...)))
+@end group
+@end example
+
+@noindent
+Feel free to submit new functions in excorporate.el and the backends
+that you think others would find useful.  Functions in excorporate.el
+have always kept/must always keep the same interface so that they stay
+backward compatible.
 
 @bye

@@ -24,7 +24,7 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
 
-File: excorporate.info,  Node: Top,  Next: Installation,  Up: (dir)
+File: excorporate.info,  Node: Top,  Next: Reporting Bugs,  Up: (dir)
 
 Excorporate Manual
 ******************
@@ -50,16 +50,27 @@ welcome, as are patches to enable more of these access scenarios.  See
 
 * Menu:
 
+* Reporting Bugs::              How to report bugs in Excorporate
 * Installation::                Getting and installing 'excorporate'.
 * Configuration::               Configuring 'excorporate'.
 * Usage::                       Using 'excorporate'.
 * Troubleshooting::             Debugging why a connection failed
-* Reporting Bugs::              Reporting bugs
+* API Usage::                   Using the API provided by 'excorporate'.
 
 
-File: excorporate.info,  Node: Installation,  Next: Configuration,  Prev: Top,  Up: Top
+File: excorporate.info,  Node: Reporting Bugs,  Next: Installation,  Prev: Top,  Up: Top
 
-1 Installation
+1 Reporting Bugs
+****************
+
+To report a bug, send an email to 'bug-gnu-emacs@gnu.org' using your
+favourite email program.  Put "Excorporate" somewhere in the subject
+line, for example: "Excorporate: Failed to authenticate".
+
+
+File: excorporate.info,  Node: Installation,  Next: Configuration,  Prev: Reporting Bugs,  Up: Top
+
+2 Installation
 **************
 
 Excorporate works on Emacs versions >= 24.1.
@@ -71,7 +82,7 @@ Install 'excorporate' from the GNU ELPA repository:
 
 File: excorporate.info,  Node: Configuration,  Next: Usage,  Prev: Installation,  Up: Top
 
-2 Configuration
+3 Configuration
 ***************
 
 Ideally you won't need to configure Excorporate beyond providing your
@@ -101,7 +112,7 @@ Troubleshooting::.
 
 File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configuration,  Up: Top
 
-3 Usage
+4 Usage
 *******
 
 Excorporate can put entries it retrieves into the Emacs Diary, and use
@@ -150,9 +161,9 @@ Excorporate) will retrieve your meetings and display your diary so that
 you see the day's events first thing in the morning.
 
 
-File: excorporate.info,  Node: Troubleshooting,  Next: Reporting Bugs,  Prev: Usage,  Up: Top
+File: excorporate.info,  Node: Troubleshooting,  Next: API Usage,  Prev: Usage,  Up: Top
 
-4 Troubleshooting
+5 Troubleshooting
 *****************
 
 First, you'll want to double-check that the Exchange server you're
@@ -230,23 +241,121 @@ NTLM authentication ('ntlm' and 'url-http-ntlm') and SOAP communication
 ('soap-client').
 
 
-File: excorporate.info,  Node: Reporting Bugs,  Prev: Troubleshooting,  Up: Top
+File: excorporate.info,  Node: API Usage,  Prev: Troubleshooting,  Up: Top
 
-5 Reporting Bugs
-****************
+6 API Usage
+***********
 
-To report a bug, use 'M-x report-emacs-bug', and put Excorporate
-somewhere in the subject.
+Here are some examples of using the API (application programming
+interface) provided by Excorporate.
+
+Not all of Excorporate's functionality is exposed as interactive
+functions.  Here is an example of creating a meeting to which
+hacker2@gnu.org is invited, using a non-interactive function provided by
+Excorporate:
+
+     (exco-calendar-item-meeting-create
+      (car exco--connection-identifiers)
+      "Test meeting 1"
+      "Hi,\n\nThis is a test meeting 1.\n\nRegards.\n"
+      (encode-time 0 15 14 23 09 2020)
+      (encode-time 0 0  15 23 09 2020)
+      "Online only"
+      '("hacker2@gnu.org") nil
+      (lambda (identifier response)
+        (message "%S: %S" identifier response)))
+     => ("hacker1@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((ResponseMessages (CreateItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]M"))))))))
+
+The callback is run asychronously after the server responds, so as not
+to block Emacs, and the result is what is printed in the '*Messages*'
+buffer.  This example assumes the user has already run 'M-x excorporate'
+to create a connection.  '(car exco--connection-identifiers)' is a hack
+that uses the first-established connection.  Excorporate fully supports
+connecting to multiple different servers though (see
+'exco-connection-iterate') so published code that uses the Excorporate
+API should not assume just one connection.
+
+There is lots of server-side functionality that Excorporate does not
+provide high-level non-interactive functions for.  Using that
+functionality is still possible with the low-level 'exco-operate' and
+'exco-operate-synchronously' functions.
+
+For example, evaluating this form produces lots of details about the
+meeting represented by the ItemId form, including tidbits like the list
+of invitees and how they've responded (accepted, declined, tentatively
+accepted, unknown).  You can find ItemId forms to experiment with in the
+PROPERTIES drawer of calendar entries in the interactive Org buffer.
+
+     (exco-operate-synchronously
+       (car exco--connection-identifiers)
+       "GetItem"
+       '(((ItemShape (BaseShape . "AllProperties"))
+          (ItemIds (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]d"))))
+         nil nil nil nil nil nil))
+     => (((ResponseMessages (GetItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem ...))))))
+
+Note that this function is synchronous.  This is nice for experimenting
+with, for example, in an IELM REPL, but published code should mostly use
+the asynchronous calls to avoid blocking Emacs during server operations.
+
+Here is a more complicated example that asynchronously queries the
+server for availability overlap for hacker1@gnu.org and hacker2@gnu.org,
+in the Eastern Time Zone.
+
+     (exco-operate
+      (car exco--connection-identifiers)
+      "GetUserAvailability"
+      '(((TimeZone
+          (Bias . 300)
+          (StandardTime
+           (Bias . 0)
+           (Time . "02:00:00")
+           (DayOrder . 1)
+           (Month . 11)
+           (DayOfWeek . "Sunday"))
+          (DaylightTime
+           (Bias . -60)
+           (Time . "02:00:00")
+           (DayOrder . 2)
+           (Month . 3)
+           (DayOfWeek . "Sunday")))
+         (MailboxDataArray
+          (MailboxData
+           (Email
+            (Address . "hacker1@gnu.org"))
+           (AttendeeType . "Required")
+           (ExcludeConflicts . nil))
+          (MailboxData
+           (Email
+            (Address . "hacker2@gnu.org"))
+           (AttendeeType . "Required")
+           (ExcludeConflicts . nil)))
+         (FreeBusyViewOptions
+          (TimeWindow
+           (StartTime . "2020-09-25T00:00:00Z")
+           (EndTime . "2020-09-25T23:59:00Z"))
+          (MergedFreeBusyIntervalInMinutes . 60)
+          (RequestedView "DetailedMerged")))
+        nil nil nil)
+      (lambda (identifier response)
+        (message "%S: %S" identifier response)))
+     => ("hacker1@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((FreeBusyResponseArray (FreeBusyResponse ... ) ...)))
+
+Feel free to submit new functions in excorporate.el and the backends
+that you think others would find useful.  Functions in excorporate.el
+have always kept/must always keep the same interface so that they stay
+backward compatible.
 
 
 
 Tag Table:
 Node: Top1103
-Node: Installation2305
-Node: Configuration2568
-Node: Usage3588
-Node: Troubleshooting5677
-Node: Reporting Bugs8550
+Node: Reporting Bugs2399
+Node: Installation2723
+Node: Configuration2997
+Node: Usage4017
+Node: Troubleshooting6106
+Node: API Usage8974
 
 End Tag Table
 
