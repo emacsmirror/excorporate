@@ -1,4 +1,4 @@
-This is excorporate.info, produced by makeinfo version 6.6 from
+This is excorporate.info, produced by makeinfo version 6.7 from
 excorporate.texi.
 
 Copyright (C) 2016 Free Software Foundation, Inc.
@@ -125,6 +125,19 @@ retrieved events.  By default, 'excorporate-calendar-show-day-function'
 is set to 'exco-org-show-day' which displays meetings in a temporary
 read-only Org Mode buffer named '*Excorporate*'.
 
+   In the '*Excorporate*' buffer, you can run 'M-x
+exco-org-decline-meeting-request' to decline a meeting request.  To
+provide a response message, 'C-u M-x exco-org-decline-meeting-request'.
+Likewise for accepting ('exco-org-accept-meeting-request')or tentatively
+accepting ('exco-org-accept-meeting-request') meeting requests.
+
+   A meeting is a calendar event to which at least one other person is
+invited.  To cancel a meeting (or an occurence of a recurring meeting)
+that you organized, use 'M-x exco-org-cancel-meeting'.
+
+   An appointment is a calendar item that has no invitees.  To delete an
+appointment that you created, type 'M-x exco-org-delete-appointment'.
+
    If you prefer, you can install the 'calfw' package, and set
 'excorporate-calendar-show-day-function' to 'exco-calfw-show-day'.
 
@@ -232,7 +245,12 @@ Node: Top1103
 Node: Installation2305
 Node: Configuration2568
 Node: Usage3588
-Node: Troubleshooting5006
-Node: Reporting Bugs7879
+Node: Troubleshooting5677
+Node: Reporting Bugs8550
 
 End Tag Table
+
+
+Local Variables:
+coding: utf-8
+End:

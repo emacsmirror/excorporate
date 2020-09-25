@@ -139,6 +139,21 @@ view of retrieved events.  By default,
 @code{exco-org-show-day} which displays meetings in a temporary
 read-only Org Mode buffer named @code{*Excorporate*}.
 
+In the @code{*Excorporate*} buffer, you can run @kbd{M-x
+exco-org-decline-meeting-request} to decline a meeting request.  To
+provide a response message, @kbd{C-u M-x
+exco-org-decline-meeting-request}.  Likewise for accepting
+(@code{exco-org-accept-meeting-request})or tentatively accepting
+(@code{exco-org-accept-meeting-request}) meeting requests.
+
+A meeting is a calendar event to which at least one other person is
+invited.  To cancel a meeting (or an occurence of a recurring meeting)
+that you organized, use @kbd{M-x exco-org-cancel-meeting}.
+
+An appointment is a calendar item that has no invitees.  To delete an
+appointment that you created, type @kbd{M-x
+exco-org-delete-appointment}.
+
 If you prefer, you can install the @code{calfw} package, and set
 @code{excorporate-calendar-show-day-function} to
 @code{exco-calfw-show-day}.
