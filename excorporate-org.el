@@ -311,7 +311,7 @@ meeting organizer."
 		    (org-mode)
 		    (let ((new-arguments arguments))
 		      (setf (nth 7 new-arguments)
-			    (exco-organizer-smtp-email-address
+			    (exco-resolve-organizer-email-address-synchronously
 			     identifier organizer-structure))
 		      (apply #'exco-org-insert-meeting new-arguments))))
        subject start-internal end-internal

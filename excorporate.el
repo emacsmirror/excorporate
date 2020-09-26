@@ -865,17 +865,19 @@ argument ICALENDAR-TEXT."
 						  mime-path response)))
 					   coding-system))))))
 
-;; The organizer email is in the server's internal "EX" format.
-;; Resolve it synchronously, for simplicity.
-(defun exco-organizer-smtp-email-address (identifier organizer-structure)
+;; The organizer email address is in some cases returned in the
+;; server's internal "EX" format which is very long and unfamiliar.
+;; If necessary resolve it to the "SMTP" format.  This is done
+;; synchronously, for simplicity.
+(defun exco-resolve-organizer-email-address-synchronously (identifier
+							   organizer-structure)
   "Return the organizer's SMTP email address as a string.
 IDENTIFIER is the connection identifier to use to resolve
 ORGANIZER-STRUCTURE to the returned value.  ORGANIZER-STRUCTURE
-should be treated as opaque.
-
-This function queries the server synchronously.  It times out and
-returns nil if the server does not respond in under
-`exco--server-timeout' seconds."
+should be treated as opaque.  If the address is not already an
+SMTP address, then this function queries the server synchronously
+to resolve the SMTP address.  It times out and returns nil if the
+server does not respond in under `exco--server-timeout' seconds."
   (let* ((wrapped (list (list organizer-structure)))
 	 (routing-type
 	  (exco-extract-value '(Organizer Mailbox RoutingType) wrapped))
