@@ -33,44 +33,51 @@
 (defvar exco-org--temporary-buffers '()
   "A list of per-connection result buffers.")
 
+(defun exco-org--calendar-item-region-at-point ()
+  "A special case replacement for `org-element-at-point'.
+Return a list (BEGIN END) representing the region of the element
+at point, if point is at a calendar item.  If point is not at a
+calendar item, return nil.  This works back to Emacs 24.1's
+built-in Org 9.1.9 which does not have the `org-element'
+feature."
+  (catch 'not-a-calendar-item
+    (save-excursion
+      (values
+       (progn (ignore-errors (org-back-to-heading))
+	      (unless (looking-at "^\\*\\* ") (throw 'not-a-calendar-item nil))
+	      (point))
+       (progn (org-end-of-subtree) (forward-char 1)
+	      (point))))))
+
 (defun exco-org--connection-identifier-at-point ()
   "Return the connection identifier associated with point."
   (let* ((calendar-headline
-	  (save-excursion (org-up-heading-safe) (org-element-at-point)))
-	 (headline (org-element-property :raw-value calendar-headline)))
-    (string-match "Calendar (\\(.*\\))$" headline)
-    (car (read-from-string (match-string 1 headline)))))
+	  (save-excursion
+	    (org-up-heading-safe)
+	    (org-trim (substring-no-properties (thing-at-point 'line))))))
+    (when (string-match "\\* Calendar (\\(.*\\))$" calendar-headline)
+      (car (read-from-string (match-string 1 calendar-headline))))))
 
 (defun exco-org--item-identifier-at-point ()
   "Return the item identifier associated with point."
-  (car
-   (read-from-string
-   (org-entry-get (car (org-get-property-block)) "Identifier"))))
+  (car (read-from-string
+	(org-entry-get (car (org-get-property-block)) "Identifier"))))
 
 (defun exco-org--is-meeting ()
   "Return t if the entry at point is a meeting, not an appointment."
-  (save-excursion
-    (org-back-to-heading)
-    (let ((element (org-element-at-point)))
-      ;; Rule out top Calendar item.
-      (when (equal (org-element-property :level element) 2)
-	(not (null
-	      (re-search-forward
-	     "^\+ Invitees:$"
-	     (org-element-property :end (org-element-at-point)) t)))))))
+  (let ((region (exco-org--calendar-item-region-at-point)))
+    (when region
+      (let ((item-text (apply #'buffer-substring-no-properties region)))
+	(when (string-match "^\+ Invitees:$" item-text) t)))))
 
 (defun exco-org--organizer ()
   "Return a string representing the item at point's organizer."
-  (save-excursion
-    (org-back-to-heading)
-    (let* ((element (org-element-at-point))
-	   (begin (org-element-property :begin element))
-	   (end (org-element-property :end element))
-	   (entry-text (buffer-substring-no-properties begin end)))
-      ;; Rule out top Calendar item.
-      (when (equal (org-element-property :level element) 2)
-	(string-match "^+ Organizer: \\(.*\\)$" entry-text)
-	(match-string 1 entry-text)))))
+  (let ((region (exco-org--calendar-item-region-at-point)))
+    (when region
+      (let ((item-text (apply #'buffer-substring-no-properties region)))
+	(string-match "^+ Organizer: \\(.*\\)$" item-text)
+	;; FIXME: Is this a critical region?
+	(match-string 1 item-text)))))
 
 (defun exco-org--organizer-matches-connection ()
   "Return non-nil if the entry at point is owned by the connection owner."
@@ -100,16 +107,13 @@ operated on."
 	   (progn ,@forms (message "excorporate-org: Successfully %s" ,success))
 	 (message "excorporate-org: Failed to %s: %S" ,failure ,response))))
 
-(defun exco-org--remove-element ()
-  "Remove the element at point."
+(defun exco-org--remove-calendar-item ()
+  "Remove the calendar item at point."
   (with-current-buffer (get-buffer-create excorporate-org-buffer-name)
-    (save-excursion
-      (org-back-to-heading)
-      (let* ((inhibit-read-only t)
-	     (element (org-element-at-point))
-	     (begin (org-element-property :begin element))
-	     (end (org-element-property :end element)))
-	(delete-region begin end)))))
+    (let ((region (exco-org--calendar-item-region-at-point)))
+      (when region
+	(let ((inhibit-read-only t))
+	  (apply #'delete-region region))))))
 
 (defun exco-org--reply-to-meeting (acceptance prompt-for-message)
   "Reply to a meeting.
@@ -182,7 +186,7 @@ text."
 	 (exco-org--handle-response
 	  response CreateItemResponseMessage
 	  "cancelled meeting" "cancel meeting"
-	  (exco-org--remove-element)))))))
+	  (exco-org--remove-calendar-item)))))))
 
 (defun exco-org-delete-appointment ()
   "Delete the appointment at point."
@@ -198,7 +202,7 @@ text."
 	 (exco-org--handle-response
 	  response DeleteItemResponseMessage
 	  "deleted appointment" "delete appointment"
-	  (exco-org--remove-element)))))))
+	  (exco-org--remove-calendar-item)))))))
 
 (defun exco-org-initialize-buffer ()
   "Add initial text to the destination buffer."
