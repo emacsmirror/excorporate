@@ -137,6 +137,9 @@ state machine represents a service connection.")
 (defvar exco--connection-identifiers nil
   "An ordered list of connection identifiers.")
 
+(defvar exco--server-timeout 5
+  "The timeout in seconds to wait for a synchronous server response.")
+
 (defun exco--parse-xml-in-current-buffer ()
   "Decode and parse the XML contents of the current buffer."
   (let ((mime-part (mm-dissect-buffer t t)))
@@ -648,7 +651,8 @@ IDENTIFIER is the connection identifier.  Execute operation NAME
 with ARGUMENTS then call CALLBACK with two arguments, IDENTIFIER
 and the server's response."
   (exco--with-fsm identifier
-    (fsm-call fsm (list name arguments))))
+    (with-timeout (exco--server-timeout (error "Timed out waiting for server"))
+      (fsm-call fsm (list name arguments)))))
 
 (defun exco-server-version (identifier)
   "Return the server version for connection IDENTIFIER, as a string.
@@ -867,7 +871,11 @@ argument ICALENDAR-TEXT."
   "Return the organizer's SMTP email address as a string.
 IDENTIFIER is the connection identifier to use to resolve
 ORGANIZER-STRUCTURE to the returned value.  ORGANIZER-STRUCTURE
-should be treated as opaque."
+should be treated as opaque.
+
+This function queries the server synchronously.  It times out and
+returns nil if the server does not respond in under
+`exco--server-timeout' seconds."
   (let* ((wrapped (list (list organizer-structure)))
 	 (routing-type
 	  (exco-extract-value '(Organizer Mailbox RoutingType) wrapped))
@@ -883,10 +891,11 @@ should be treated as opaque."
 	 Mailbox
 	 EmailAddress)
        (with-timeout
-	   (2 (progn
-		(message (concat "exco-organizer-smtp-email-address:"
-				 " Server did not respond in time"))
-		nil))
+	   (exco--server-timeout
+	    (progn
+	      (message (concat "exco-organizer-smtp-email-address:"
+			       " Server did not respond in time"))
+	      nil))
 	 (exco-operate-synchronously identifier
 				     "ResolveNames"
 				     `(((UnresolvedEntry . ,email-address))
