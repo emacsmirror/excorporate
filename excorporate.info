@@ -261,7 +261,8 @@ Excorporate:
       (encode-time 0 15 14 23 09 2020)
       (encode-time 0 0  15 23 09 2020)
       "Online only"
-      '("hacker2@gnu.org") nil
+      '("hacker2@gnu.org")
+      nil
       (lambda (identifier response)
         (message "%S: %S" identifier response)))
      =>
@@ -298,11 +299,15 @@ accepted, unknown).  You can find ItemId forms to experiment with in the
 PROPERTIES drawer of calendar entries in the interactive Org buffer.
 
      (exco-operate-synchronously
-       (car exco--connection-identifiers)
-       "GetItem"
-       '(((ItemShape (BaseShape . "AllProperties"))
-          (ItemIds (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]d"))))
-         nil nil nil nil nil nil))
+      (car exco--connection-identifiers)
+      "GetItem"
+      '(((ItemShape
+          (BaseShape . "AllProperties"))
+         (ItemIds
+          (ItemId
+           (Id . "A[...]A==")
+           (ChangeKey . "D[...]d"))))
+        nil nil nil nil nil nil))
      =>
      (((ResponseMessages
         (GetItemResponseMessage
@@ -372,14 +377,14 @@ PROPERTIES drawer of calendar entries in the interactive Org buffer.
            (AppointmentState . 1)
            (IsOnlineMeeting)))))))
 
-Note that this function is synchronous.  This is nice for experimenting
-with, for example, in an '*ielm*' REPL, but published code should mostly
-use the asynchronous calls to avoid blocking Emacs during server
-operations.
+Note that this function queries the server synchronously.  In other
+words, it waits for, and evaluates to, the server's reply.  This is nice
+when experimenting with the API, but published code should mostly use
+the asynchronous calls to avoid blocking Emacs during server operations.
 
 Here is a more complicated example that asynchronously queries the
 server for availability overlap for hacker1@gnu.org and hacker2@gnu.org,
-in the Eastern Time Zone.
+in the Eastern Time time zone.
 
      (exco-operate
       (car exco--connection-identifiers)
@@ -508,6 +513,210 @@ in the Eastern Time Zone.
              (DayOfWeek "Monday" "Tuesday" "Wednesday" "Thursday" "Friday")
              (StartTimeInMinutes . 480)
              (EndTimeInMinutes . 1020)))))))))
+
+This example shows how to create a recurrence in the "Eastern Standard
+Time" time zone.  The spliced-in code fragment shows how to query how
+many 'nil' arguments should be specified for the 'CreateItem' operation.
+Arguments other than the first ("request") argument may be needed in the
+future to use more complicated server functionality, but for now they
+can all be left 'nil'.
+
+     (exco-operate
+      (car exco--connection-identifiers)
+      "CreateItem"
+      `(((SendMeetingInvitations . "SendToAllAndSaveCopy")
+         (Items
+          (CalendarItem
+           (Subject . "Test recurrence 1")
+           (Body (BodyType . "Text") "Testing recurrence creation.")
+           (Start . "2020-09-25T17:00:00-04:00")
+           (End . "2020-09-25T18:00:00-04:00")
+           (StartTimeZone (Id . "Eastern Standard Time"))
+           (EndTimeZone (Id . "Eastern Standard Time"))
+           (Location . "Online")
+           (RequiredAttendees
+            (Attendee (Mailbox (EmailAddress . "hacker1@gnu.org"))))
+           (Recurrence
+            (WeeklyRecurrence
+             (Interval . 1)
+             (DaysOfWeek "Friday"))
+            (NumberedRecurrence
+             (StartDate . "2020-09-25-04:00")
+             (NumberOfOccurrences . 4))))))
+        ;; Empty arguments.
+        ,@(let* ((wsdl (exco--with-fsm (car exco--connection-identifiers)
+                         (plist-get (fsm-get-state-data fsm) :service-wsdl)))
+                 (arity (soap-operation-arity wsdl
+                                              "ExchangeServicePort"
+                                              "CreateItem")))
+            (make-list (- arity 1) nil)))
+      (lambda (identifier response)
+        (message "%S: %S" identifier response)))
+     =>
+     ;; Printed in *Messages*:
+     ("hacker1@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"):
+     (((ResponseMessages
+        (CreateItemResponseMessage
+         (ResponseClass . "Success")
+         (ResponseCode . "NoError")
+         (Items
+          (CalendarItem
+           (ItemId
+            (Id . "A[...]A==")
+            (ChangeKey . "D[...]k"))))))))
+
+Now we can retrieve the item's properties to see the recurrence and time
+zone details:
+
+     (exco-operate
+      (car exco--connection-identifiers)
+      "GetItem"
+      '(((ItemShape
+          (BaseShape . "AllProperties"))
+         (ItemIds
+          (ItemId
+           (Id . "A[...]A==")
+           (ChangeKey . "D[...]d"))))
+        nil nil nil nil nil nil)
+      (lambda (identifier response)
+        (message "%S: %S" identifier response)))
+     =>
+     ;; Printed in *Messages*:
+     ("hacker1@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"):
+     (((ResponseMessages
+        (GetItemResponseMessage
+         (ResponseClass . "Success")
+         (ResponseCode . "NoError")
+         (Items
+          (CalendarItem
+           (ItemId
+            (Id . "A[...]A==")
+            (ChangeKey . "D[...]h"))
+           (ParentFolderId
+            (Id . "A[...]A")
+            (ChangeKey . "A[...]A=="))
+           (ItemClass . "IPM.Appointment")
+           (Subject . "Test recurrence 1")
+           (Sensitivity . "Normal")
+           (Body
+            (BodyType . "Text") . "Testing recurrence creation.")
+           (DateTimeReceived . "2020-09-26T00:23:59Z")
+           (Size . 13636)
+           (Importance . "Normal")
+           (IsSubmitted)
+           (IsDraft)
+           (IsFromMe)
+           (IsResend)
+           (IsUnmodified)
+           (DateTimeSent . "2020-09-26T00:23:59Z")
+           (DateTimeCreated . "2020-09-26T00:23:59Z")
+           (ResponseObjects
+            (ForwardItem)
+            (CancelCalendarItem))
+           (ReminderDueBy . "2020-10-02T21:00:00Z")
+           (ReminderIsSet . t)
+           (ReminderMinutesBeforeStart . 15)
+           (DisplayCc)
+           (DisplayTo . "Hacker One")
+           (HasAttachments)
+           (Culture . "en-US")
+           (Start . "2020-09-25T21:00:00Z")
+           (End . "2020-09-25T22:00:00Z")
+           (IsAllDayEvent)
+           (LegacyFreeBusyStatus . "Busy")
+           (Location . "Online")
+           (IsMeeting . t)
+           (IsCancelled)
+           (IsRecurring)
+           (MeetingRequestWasSent)
+           (IsResponseRequested . t)
+           (CalendarItemType . "RecurringMaster")
+           (MyResponseType . "Organizer")
+           (Organizer
+            (Mailbox
+             (Name . "Hacker One")
+             (EmailAddress . "hacker1@gnu.org")
+             (RoutingType . "SMTP")))
+           (RequiredAttendees
+            (Attendee
+             (Mailbox
+              (Name . "Hacker One")
+              (EmailAddress . "hacker1@gnu.org")
+              (RoutingType . "SMTP")
+              (MailboxType . "Mailbox"))
+             (ResponseType . "Unknown")))
+           (Duration . "PT1H")
+           (TimeZone . "
+     (UTC-05:00) Eastern Time
+     (US & Canada)")
+           (AppointmentSequenceNumber . 0)
+           (AppointmentState . 1)
+           (Recurrence
+            (WeeklyRecurrence
+             (Interval . 1)
+             (DaysOfWeek "Friday"))
+            (NumberedRecurrence
+             (StartDate . "2020-09-25-04:00")
+             (NumberOfOccurrences . 4)))
+           (FirstOccurrence
+            (ItemId
+             (Id . "A[...]A==")
+             (ChangeKey . "D[...]h"))
+            (Start . "2020-09-25T21:00:00Z")
+            (End . "2020-09-25T22:00:00Z")
+            (OriginalStart . "2020-09-25T21:00:00Z"))
+           (LastOccurrence
+            (ItemId
+             (Id . "A[...]A==")
+             (ChangeKey . "D[...]h"))
+            (Start . "2020-10-16T21:00:00Z")
+            (End . "2020-10-16T22:00:00Z")
+            (OriginalStart . "2020-10-16T21:00:00Z"))
+           (MeetingTimeZone
+            (TimeZoneName . "Eastern Standard Time")
+            (BaseOffset . 0)
+            (Daylight
+             (TimeZoneName . "Daylight")
+             (Offset . 0)
+             (RelativeYearlyRecurrence
+              (DaysOfWeek . "Sunday")
+              (DayOfWeekIndex . "Second")
+              (Month . "March"))
+             (Time . "02:00:00"))
+            (Standard
+             (TimeZoneName . "Standard")
+             (Offset . 0)
+             (RelativeYearlyRecurrence
+              (DaysOfWeek . "Sunday")
+              (DayOfWeekIndex . "First")
+              (Month . "November"))
+             (Time . "02:00:00")))
+           (IsOnlineMeeting)))))))
+
+Finally, this is how to delete all the occurrences in the series.
+ItemId here is the top-level recurrence item identifier which is
+returned as '(CalendarItem (ItemId ...) ...)' by the above 'GetItem'
+operation, whose 'CalendarType' element is "RecurringMaster".
+
+     (exco-operate
+      (car exco--connection-identifiers)
+      "DeleteItem"
+      '(((DeleteType . "MoveToDeletedItems")
+         (SendMeetingCancellations . "SendToNone")
+         (ItemIds
+          (ItemId
+           (Id . "A[...]A==")
+           (ChangeKey . "D[...]h"))))
+        nil nil nil)
+      (lambda (identifier response)
+        (message "%S: %S" identifier response)))
+     =>
+     ;; Printed in *Messages*:
+     ("hacker1@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"):
+     (((ResponseMessages
+        (DeleteItemResponseMessage
+         (ResponseClass . "Success")
+         (ResponseCode . "NoError")))))
 
 Feel free to contribute new functions that you think others would find
 useful; file a bug with a patch against
