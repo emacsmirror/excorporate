@@ -300,7 +300,18 @@ Excorporate:
  '("hacker2@@gnu.org") nil
  (lambda (identifier response)
    (message "%S: %S" identifier response)))
-@result{} ("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((ResponseMessages (CreateItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]M"))))))))
+@result{}
+;; Printed in *Messages*:
+("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"):
+(((ResponseMessages
+   (CreateItemResponseMessage
+    (ResponseClass . "Success")
+    (ResponseCode . "NoError")
+    (Items
+     (CalendarItem
+      (ItemId
+       (Id . "A[...]A==")
+       (ChangeKey . "D[...]M"))))))))
 @end group
 @end example
 
@@ -335,14 +346,82 @@ PROPERTIES drawer of calendar entries in the interactive Org buffer.
   '(((ItemShape (BaseShape . "AllProperties"))
      (ItemIds (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]d"))))
     nil nil nil nil nil nil))
-@result{} (((ResponseMessages (GetItemResponseMessage (ResponseClass . "Success") (ResponseCode . "NoError") (Items (CalendarItem ...))))))
+@result{}
+(((ResponseMessages
+   (GetItemResponseMessage
+    (ResponseClass . "Success")
+    (ResponseCode . "NoError")
+    (Items
+     (CalendarItem
+      (ItemId (Id . "A[...]A==") (ChangeKey . "D[...]M"))
+      (ParentFolderId (Id . "A[...]A") (ChangeKey . "A[...]A=="))
+      (ItemClass . "IPM.Appointment")
+      (Subject . "Excorporate discussion")
+      (Sensitivity . "Normal")
+      (Body (BodyType . "Text") . "Hi Hacker Two,
+
+Let's discuss Excorporate.
+
+Hacker One")
+      (DateTimeReceived . "2020-09-24T20:07:26Z")
+      (Size . 13709)
+      (Importance . "Normal")
+      (IsSubmitted)
+      (IsDraft)
+      (IsFromMe)
+      (IsResend)
+      (IsUnmodified)
+      (DateTimeSent . "2020-09-24T20:07:26Z")
+      (DateTimeCreated . "2020-09-24T20:07:26Z")
+      (ResponseObjects
+       (ForwardItem)
+       (CancelCalendarItem))
+      (ReminderDueBy . "2020-09-25T14:30:00Z")
+      (ReminderIsSet . t)
+      (ReminderMinutesBeforeStart . 15)
+      (DisplayCc)
+      (DisplayTo . "Hacker Two")
+      (HasAttachments)
+      (Culture . "en-US")
+      (Start . "2020-09-25T14:30:00Z")
+      (End . "2020-09-25T15:30:00Z")
+      (IsAllDayEvent)
+      (LegacyFreeBusyStatus . "Busy")
+      (Location . "Online")
+      (IsMeeting . t)
+      (IsCancelled)
+      (IsRecurring)
+      (MeetingRequestWasSent . t)
+      (IsResponseRequested . t)
+      (CalendarItemType . "Single")
+      (MyResponseType . "Organizer")
+      (Organizer
+       (Mailbox
+        (Name . "Hacker One")
+        (EmailAddress . "hacker1@@gnu.org")
+        (RoutingType . "SMTP")))
+      (RequiredAttendees
+       (Attendee
+        (Mailbox
+         (Name . "Hacker Two")
+         (EmailAddress . "hacker2@@gnu.org")
+         (RoutingType . "SMTP")
+         (MailboxType . "Mailbox"))
+        (ResponseType . "Accept")
+        (LastResponseTime . "2020-09-24T21:08:54Z")))
+      (Duration . "PT1H")
+      (TimeZone . "(UTC+00:00) Monrovia, Reykjavik")
+      (AppointmentSequenceNumber . 0)
+      (AppointmentState . 1)
+      (IsOnlineMeeting)))))))
 @end group
 @end example
 
 @noindent
 Note that this function is synchronous.  This is nice for experimenting
-with, for example, in an IELM REPL, but published code should mostly use
-the asynchronous calls to avoid blocking Emacs during server operations.
+with, for example, in an @code{*ielm*} REPL, but published code should
+mostly use the asynchronous calls to avoid blocking Emacs during server
+operations.
 
 @noindent
 Here is a more complicated example that asynchronously queries the
@@ -388,14 +467,106 @@ in the Eastern Time Zone.
    nil nil nil)
  (lambda (identifier response)
    (message "%S: %S" identifier response)))
-@result{} ("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"): (((FreeBusyResponseArray (FreeBusyResponse ... ) ...)))
+@result{}
+;; Printed in *Messages*:
+("hacker1@@gnu.org" . "https://mail.gnu.org/EWS/Exchange.asmx"):
+(((FreeBusyResponseArray
+   (FreeBusyResponse
+    (ResponseMessage
+     (ResponseClass . "Success")
+     (ResponseCode . "NoError"))
+    (FreeBusyView
+     (FreeBusyViewType "FreeBusyMerged")
+     (MergedFreeBusy . "000000000000000000000200")
+     (CalendarEventArray
+      (CalendarEvent
+       (StartTime . "2020-09-25T12:00:00")
+       (EndTime . "2020-09-25T12:30:00")
+       (BusyType . "Busy")))
+     (WorkingHours
+      (TimeZone
+       (Bias . 480)
+       (StandardTime
+        (Bias . 0)
+        (Time . "02:00:00")
+        (DayOrder . 1)
+        (Month . 11)
+        (DayOfWeek . "Sunday"))
+       (DaylightTime
+        (Bias . -60)
+        (Time . "02:00:00")
+        (DayOrder . 2)
+        (Month . 3)
+        (DayOfWeek . "Sunday")))
+      (WorkingPeriodArray
+       (WorkingPeriod
+        (DayOfWeek "Monday" "Tuesday" "Wednesday" "Thursday" "Friday")
+        (StartTimeInMinutes . 540)
+        (EndTimeInMinutes . 1080))))))
+   (FreeBusyResponse
+    (ResponseMessage
+     (ResponseClass . "Success")
+     (ResponseCode . "NoError"))
+    (FreeBusyView
+     (FreeBusyViewType "DetailedMerged")
+     (MergedFreeBusy . "000000000000002200000200")
+     (CalendarEventArray
+      (CalendarEvent
+       (StartTime . "2020-09-25T05:30:00")
+       (EndTime . "2020-09-25T06:30:00")
+       (BusyType . "Busy")
+       (CalendarEventDetails
+        (ID . "0[...]0")
+        (Subject . "Excorporate discussion")
+        (Location . "Online")
+        (IsMeeting . t)
+        (IsRecurring)
+        (IsException)
+        (IsReminderSet . t)
+        (IsPrivate)))
+      (CalendarEvent
+       (StartTime . "2020-09-25T12:00:00")
+       (EndTime . "2020-09-25T12:30:00")
+       (BusyType . "Busy")
+       (CalendarEventDetails
+        (ID . "0[...]0")
+        (Subject . "An occurence of a recurring meeting")
+        (Location)
+        (IsMeeting . t)
+        (IsRecurring . t)
+        (IsException)
+        (IsReminderSet . t)
+        (IsPrivate))))
+     (WorkingHours
+      (TimeZone
+       (Bias . 480)
+       (StandardTime
+        (Bias . 0)
+        (Time . "02:00:00")
+        (DayOrder . 1)
+        (Month . 11)
+        (DayOfWeek . "Sunday"))
+       (DaylightTime
+        (Bias . -60)
+        (Time . "02:00:00")
+        (DayOrder . 2)
+        (Month . 3)
+        (DayOfWeek . "Sunday")))
+      (WorkingPeriodArray
+       (WorkingPeriod
+        (DayOfWeek "Monday" "Tuesday" "Wednesday" "Thursday" "Friday")
+        (StartTimeInMinutes . 480)
+        (EndTimeInMinutes . 1020)))))))))
 @end group
 @end example
 
 @noindent
-Feel free to submit new functions in excorporate.el and the backends
-that you think others would find useful.  Functions in excorporate.el
-have always kept/must always keep the same interface so that they stay
-backward compatible.
+Feel free to contribute new functions that you think others would find
+useful; file a bug with a patch against
+@code{https://git.savannah.gnu.org/git/emacs/elpa.git}.  Functions in
+@code{excorporate.el} must always keep the same interface so that they
+stay backward compatible.  If an existing function has an insufficient
+interface, make a new one.  Excorporate functions are written to work
+with older Emacs versions, back to Emacs 24.1.
 
 @bye
