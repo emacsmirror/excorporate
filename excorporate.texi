@@ -567,11 +567,12 @@ hacker2@@gnu.org, in the Eastern Time time zone.
 
 @noindent
 This example shows how to create a recurrence in the ``Eastern Standard
-Time'' time zone.  The @{exco-operation-arity-nils} call returns the
-number of arguments (all @code{nil}) that the @code{CreateItem}
-operation takes.  Arguments other than the first (``request'') argument
-may be needed in the future to use more complicated server
-functionality, but for now they can all be left @code{nil}.
+Time'' time zone.  The @code{exco-operation-arity-nils} call returns a
+list of nils with a length matching the number of arguments that the
+@code{CreateItem} operation takes.  Arguments other than the first
+(``request'') argument may be needed in the future to use more
+complicated server functionality, but for now they can all be left
+@code{nil}.
 
 @example
 @group

@@ -1,5 +1,17 @@
 Excorporate provides Exchange integration for Emacs.
 
+New in Excorporate 0.9.0, released 2020-09-30:
+
+** Add interactive exco-org meeting and appointment cancellation functions
+
+** Add interactive exco-org meeting reply functions
+
+** Add meeting and appointment creation functions
+
+** Add meeting organizer to Org entries
+
+** Add API Usage section to the manual, with several examples
+
 To create a connection to a web service:
 
 M-x excorporate

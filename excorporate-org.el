@@ -1,6 +1,6 @@
 ;;; excorporate-org.el --- Exchange Org Mode view     -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016-2019 Free Software Foundation, Inc.
+;; Copyright (C) 2016-2020 Free Software Foundation, Inc.
 
 ;; Author: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Keywords: calendar

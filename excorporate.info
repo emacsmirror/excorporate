@@ -515,11 +515,11 @@ in the Eastern Time time zone.
              (EndTimeInMinutes . 1020)))))))))
 
 This example shows how to create a recurrence in the "Eastern Standard
-Time" time zone.  The spliced-in code fragment shows how to query how
-many 'nil' arguments should be specified for the 'CreateItem' operation.
-Arguments other than the first ("request") argument may be needed in the
-future to use more complicated server functionality, but for now they
-can all be left 'nil'.
+Time" time zone.  The 'exco-operation-arity-nils' call returns a list of
+nils with a length matching the number of arguments that the
+'CreateItem' operation takes.  Arguments other than the first
+("request") argument may be needed in the future to use more complicated
+server functionality, but for now they can all be left 'nil'.
 
      (exco-operate
       (car exco--connection-identifiers)
@@ -544,12 +544,7 @@ can all be left 'nil'.
              (StartDate . "2020-09-25-04:00")
              (NumberOfOccurrences . 4))))))
         ;; Empty arguments.
-        ,@(let* ((wsdl (exco--with-fsm (car exco--connection-identifiers)
-                         (plist-get (fsm-get-state-data fsm) :service-wsdl)))
-                 (arity (soap-operation-arity wsdl
-                                              "ExchangeServicePort"
-                                              "CreateItem")))
-            (make-list (- arity 1) nil)))
+        ,@(cdr (exco-operation-arity-nils identifier "CreateItem")))
       (lambda (identifier response)
         (message "%S: %S" identifier response)))
      =>
