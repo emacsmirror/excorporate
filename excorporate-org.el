@@ -26,6 +26,7 @@
 
 (require 'org)
 (require 'excorporate)
+(require 'cl-lib)
 
 (defvar excorporate-org-buffer-name "*Excorporate*"
   "The buffer into which Org Mode output is inserted.")
@@ -42,7 +43,7 @@ built-in Org 9.1.9 which does not have the `org-element'
 feature."
   (catch 'not-a-calendar-item
     (save-excursion
-      (values
+      (cl-values
        (progn (ignore-errors (org-back-to-heading))
 	      (unless (looking-at "^\\*\\* ") (throw 'not-a-calendar-item nil))
 	      (point))
