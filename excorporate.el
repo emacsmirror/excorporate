@@ -692,6 +692,14 @@ Return a structure, or nil, suitable for splicing into
       (list (cons (if required 'RequiredAttendees 'OptionalAttendees)
 		  (nreverse attendee-list))))))
 
+(defun exco-operation-arity-nils (identifier operation)
+  "Return a list of nil arguments for OPERATION.
+IDENTIFIER is the connection for which to look up OPERATION."
+  (let* ((wsdl (exco--with-fsm identifier
+                 (plist-get (fsm-get-state-data fsm) :service-wsdl)))
+         (arity (soap-operation-arity wsdl "ExchangeServicePort" operation)))
+    (make-list arity nil)))
+
 (defun exco-calendar-item-meeting-create (identifier
 					  subject body start end location
 					  main-invitees optional-invitees
@@ -725,12 +733,7 @@ creation."
 	,@(exco--create-attendee-structure main-invitees t)
 	,@(exco--create-attendee-structure optional-invitees nil))))
      ;; Empty arguments.
-     ,@(let* ((wsdl (exco--with-fsm identifier
-                      (plist-get (fsm-get-state-data fsm) :service-wsdl)))
-              (arity (soap-operation-arity wsdl
-                                           "ExchangeServicePort"
-                                           "CreateItem")))
-         (make-list (- arity 1) nil)))
+     ,@(cdr (exco-operation-arity-nils identifier "CreateItem")))
    callback))
 
 (defun exco-calendar-item-meeting-reply (identifier
@@ -759,13 +762,7 @@ RESPONSE, the server's response to the meeting cancellation."
 	  (ReferenceItemId ,@(cdr item-identifier))
 	  ,@(when message (list `(Body (BodyType . "Text") ,message))))))
        ;; Empty arguments.
-       ,@(let* ((wsdl (exco--with-fsm identifier
-			(plist-get (fsm-get-state-data fsm)
-                                   :service-wsdl)))
-		(arity (soap-operation-arity wsdl
-                                             "ExchangeServicePort"
-                                             "CreateItem")))
-           (make-list (- arity 1) nil)))
+       ,@(cdr (exco-operation-arity-nils identifier "CreateItem")))
      callback)))
 
 (defun exco-calendar-item-meeting-cancel (identifier
@@ -786,13 +783,7 @@ server's response to the meeting cancellation."
 	(ReferenceItemId ,@(cdr item-identifier))
 	(NewBodyContent (BodyType . "Text") ,message))))
      ;; Empty arguments.
-     ,@(let* ((wsdl (exco--with-fsm identifier
-                      (plist-get (fsm-get-state-data fsm)
-                                 :service-wsdl)))
-              (arity (soap-operation-arity wsdl
-                                           "ExchangeServicePort"
-                                           "CreateItem")))
-         (make-list (- arity 1) nil)))
+     ,@(cdr (exco-operation-arity-nils identifier "CreateItem")))
    callback))
 
 (defun exco-calendar-item-appointment-create (identifier
@@ -1070,13 +1061,7 @@ arguments, IDENTIFIER and the server's response."
 	(ParentFolderIds
 	 (DistinguishedFolderId (Id . "calendar"))))
        ;; Empty arguments.
-       ,@(let* ((wsdl (exco--with-fsm identifier
-				      (plist-get (fsm-get-state-data fsm)
-						 :service-wsdl)))
-		(arity (soap-operation-arity wsdl
-					    "ExchangeServicePort"
-					    "FindItem")))
-	   (make-list (- arity 1) nil)))
+       ,@(cdr (exco-operation-arity-nils identifier "FindItem")))
      callback)))
 
 (defun exco-connection-iterate (initialize-function
