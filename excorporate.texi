@@ -186,7 +186,7 @@ check intranet wikis and so forth; other users of non-standard clients
 may have already found the EWS URL.  This is called the ``EWS
 endpoint''.  It can be as simple as, e.g.:
 
-@code{https://mail.gnu.org/ews/exchange.asmx}
+@code{https://mail.gnu.org/EWS/Exchange.asmx}
 
 @noindent
 First you need to make sure you can access the endpoint.
@@ -196,13 +196,13 @@ For Exchange Web Services (EWS) which Excorporate uses, you'll have to
 determine the EWS endpoint for your Exchange account, call it
 @code{ews-url}.  It is usually something like:
 
-   https://<mail host name>/ews/exchange.asmx
+   https://<mail host name>/EWS/Exchange.asmx
 
 @noindent
 Excorporate calculates the WSDL URL, call it @code{wsdl-url}, by
 replacing the endpoint's last path element with ``Services.wsdl'':
 
-   https://<mail host name>/ews/Services.wsdl
+   https://<mail host name>/EWS/Services.wsdl
 
 @noindent
 Before even attempting Excorporate, you have to make these succeed:
