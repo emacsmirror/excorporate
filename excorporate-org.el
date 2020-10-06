@@ -116,12 +116,12 @@ operated on."
 	(let ((inhibit-read-only t))
 	  (apply #'delete-region region))))))
 
-(defun exco-org--reply-to-meeting (acceptance prompt-for-message)
+(defun exco-org--reply-to-meeting (acceptance do-not-prompt-for-message)
   "Reply to a meeting.
 ACCEPTANCE is a symbol, one of `accept', `tentatively-accept', or
-`decline'.  PROMPT-FOR-MESSAGE is non-nil to prompt the user for
-a message to include in the reply or nil to not include a
-message."
+`decline'.  If DO-NOT-PROMPT-FOR-MESSAGE is non-nil, do not
+prompt for or include a reply message, otherwise prompt for the
+reply message."
   (let (prompt success failure)
     (cl-ecase acceptance
       (accept
@@ -136,7 +136,8 @@ message."
        (setq prompt "Declination message: ")
        (setq success "declined")
        (setq failure "decline")))
-    (let ((message (when prompt-for-message (read-from-minibuffer prompt)))
+    (let ((message (when (not do-not-prompt-for-message)
+		     (read-from-minibuffer prompt)))
 	  (identifier (exco-org--connection-identifier-at-point))
 	  (item-identifier (exco-org--item-identifier-at-point)))
       (exco-calendar-item-meeting-reply
@@ -147,22 +148,23 @@ message."
 
 (defun exco-org-accept-meeting-request (&optional argument)
   "Accept the meeting at point.
-With a prefix argument, ARGUMENT, prompts for response message
-text."
+With a prefix argument, ARGUMENT, do not prompt for acceptance
+message text, and do not send an acceptance response."
   (interactive "P")
   (exco-org--reply-to-meeting 'accept argument))
 
 (defun exco-org-decline-meeting-request (&optional argument)
   "Decline the meeting at point.
-With a prefix argument, ARGUMENT, prompts for response message
-text."
+With a prefix argument, ARGUMENT, do not prompt for declination
+message text, and do not send a declination message."
   (interactive "P")
   (exco-org--reply-to-meeting 'decline argument))
 
 (defun exco-org-tentatively-accept-meeting-request (&optional argument)
   "Tentatively accept the meeting at point.
-With a prefix argument, ARGUMENT, prompts for response message
-text."
+With a prefix argument, ARGUMENT, do not prompt for tentative
+acceptance message text, and do not send a tentative acceptance
+message."
   (interactive "P")
   (exco-org--reply-to-meeting 'tentatively-accept argument))
 
@@ -189,10 +191,16 @@ text."
 	  "cancelled meeting" "cancel meeting"
 	  (exco-org--remove-calendar-item)))))))
 
-(defun exco-org-delete-appointment ()
-  "Delete the appointment at point."
-  (interactive)
-  (when (exco-org--is-meeting)
+(defun exco-org-delete-appointment (&optional argument)
+  "Delete the appointment at point.
+With a prefix argument, ARGUMENT, force-delete this calendar item
+without first checking if it is a meeting.  This is required
+sometimes, for example as a way to delete meetings for which one
+is the organizer and the sole invitee, since the server will
+refuse to send a meeting cancellation message to the organizer."
+  (interactive "P")
+  (when (and (not argument)
+	     (exco-org--is-meeting))
     (error "This looks like a meeting, try `exco-org-cancel-meeting' instead"))
   (let ((identifier (exco-org--connection-identifier-at-point))
 	(item-identifier (exco-org--item-identifier-at-point)))

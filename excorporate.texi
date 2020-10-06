@@ -130,6 +130,14 @@ enable this support, do:
 
 @code{M-x excorporate-diary-enable}
 
+Excorporate's diary front-end will retrieve today's meetings.
+Subsequently @code{appt} will pop up a reminder window several minutes
+prior to each meeting.
+
+If you leave Emacs running overnight, at 12:01 AM @code{appt} (via
+Excorporate) will retrieve your meetings and display your diary so
+that you see the day's events first thing in the morning.
+
 @noindent
 Open the calendar with:
 
@@ -148,12 +156,11 @@ view of retrieved events.  By default,
 @code{exco-org-show-day} which displays meetings in a temporary
 read-only Org Mode buffer named @code{*Excorporate*}.
 
-In the @code{*Excorporate*} buffer, you can run @kbd{M-x
+In the Org Mode @code{*Excorporate*} buffer, you can run @kbd{M-x
 exco-org-decline-meeting-request} to decline a meeting request.  To
-provide a response message, @kbd{C-u M-x
-exco-org-decline-meeting-request}.  Likewise for accepting
-(@code{exco-org-accept-meeting-request})or tentatively accepting
-(@code{exco-org-accept-meeting-request}) meeting requests.
+accept, use (@code{exco-org-accept-meeting-request}) or, to tentatively
+accept, invoke (@code{exco-org-tentatively-accept-meeting-request}).
+Pass a prefix argument to these functions to omit a reply message.
 
 A meeting is a calendar event to which at least one other person is
 invited.  To cancel a meeting (or an occurence of a recurring meeting)
@@ -161,19 +168,16 @@ that you organized, use @kbd{M-x exco-org-cancel-meeting}.
 
 An appointment is a calendar item that has no invitees.  To delete an
 appointment that you created, type @kbd{M-x
-exco-org-delete-appointment}.
+exco-org-delete-appointment}.  With a prefix argument, @kbd{M-x
+exco-org-delete-appointment} can be used to force-delete calendar items,
+whether they be meetings or appointments.  One example where this is
+necessary is when ``cancelling'' a meeting with a single invitee, you,
+the organizer.  The server will reject an attempt to cancel such a
+meeting because it refuses to send the organizer a cancellation message.
 
 If you prefer, you can install the @code{calfw} package, and set
 @code{excorporate-calendar-show-day-function} to
 @code{exco-calfw-show-day}.
-
-After you've retrieved today's meetings, @code{appt} will warn you
-several minutes before your next meeting starts by popping up a window
-with the meeting details.
-
-If you leave Emacs running overnight, at 12:01 AM @code{appt} (via
-Excorporate) will retrieve your meetings and display your diary so
-that you see the day's events first thing in the morning.
 
 @node Troubleshooting
 @chapter Troubleshooting
