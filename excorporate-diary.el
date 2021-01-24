@@ -76,13 +76,13 @@ respectively."
 	      #'exco-diary-icalendar--add-diary-entry-around))
 
 (defvar excorporate-diary-today-file
-  "~/.emacs.d/excorporate/diary-excorporate-today"
+  (locate-user-emacs-file "excorporate/diary-excorporate-today")
   "The diary file where Excorporate should save today's meetings.
 This file will be #include'd in `diary-file' by
 `excorporate-diary-enable'.")
 
 (defvar excorporate-diary-transient-file
-  "~/.emacs.d/excorporate/diary-excorporate-transient"
+  (locate-user-emacs-file "excorporate/diary-excorporate-transient")
   "The diary file where Excorporate should save retrieved meetings.
 This file will be #include'd in `diary-file' by
 `excorporate-diary-enable'.")
