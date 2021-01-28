@@ -579,7 +579,10 @@ the FSM should transition to on success."
     (plist-put state-data :server-version (exco--get-server-version wsdl))
     (fsm-debug-output "exco--fsm %s server version is %s"
 		      identifier (exco-server-version identifier))
-    (message "Excorporate: Connection %S is ready" identifier))
+    (message "Excorporate: Connection %S is ready" identifier)
+    (if excorporate-update-diary
+	(excorporate-diary-enable)
+      (excorporate-diary-disable)))
   (list state-data nil))
 
 (define-state exco--fsm :retrieving-data
