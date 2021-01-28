@@ -373,7 +373,7 @@ the FSM should transition to on success."
 		      (unwind-protect
 			  (progn
 			    (url-debug 'excorporate
-			     "Processing status: %s" status)
+				       "Processing status: %s" status)
 			    (if (eq (car status) :error)
 				(progn
 				  (if (and
