@@ -1118,9 +1118,6 @@ callback needs to make a recursive asynchronous call."
   :group 'comm
   :group 'calendar)
 
-;; Name the excorporate-configuration variable vaguely.  It is currently a
-;; MAIL-ADDRESS string, a pair (MAIL-ADDRESS . SERVICE-URL), or nil.  In the
-;; future it could allow a list of strings and pairs.
 (defcustom excorporate-configuration nil
   "Excorporate configuration.
 
