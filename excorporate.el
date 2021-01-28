@@ -120,6 +120,26 @@
 (require 'excorporate-calendar)
 (require 'org)
 
+(defgroup excorporate nil
+  "Exchange support."
+  :version "25.1"
+  :group 'comm
+  :group 'calendar)
+
+(defcustom excorporate-update-diary t
+  "If non-nil, Excorporate will add entries to Emacs's diary.
+See also `org-agenda-include-diary' to include retreived entries
+in Org's agenda view.
+
+`excorporate-update-diary' affects the behaviour of `excorporate'
+just after a server connection is established.  Changes to this
+variable do not take effect unless `excorporate' is re-run.  If
+one wants to disable or enable Excorporate diary support
+dynamically, without re-running `excorporate', one can call the
+interactive functions, `excorporate-diary-disable' and
+`excorporate-diary-enable'."
+  :type 'boolean)
+
 ;; For Office 365, URLs containing autodiscover-s.outlook.com do not
 ;; seem to work properly (the returned XML gives ErrorCode 600).
 (defconst exco--autodiscovery-templates
@@ -1112,12 +1132,6 @@ callback needs to make a recursive asynchronous call."
 	       wrapped-callback))))
 
 ;; User-visible functions and variables.
-(defgroup excorporate nil
-  "Exchange support."
-  :version "25.1"
-  :group 'comm
-  :group 'calendar)
-
 (defcustom excorporate-configuration nil
   "Excorporate configuration.
 
