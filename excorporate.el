@@ -131,10 +131,10 @@
 
 (defcustom excorporate-update-diary t
   "If non-nil, Excorporate will add entries to Emacs's diary.
-See also `org-agenda-include-diary' to include retreived entries
+See also `org-agenda-include-diary' to include retrieved entries
 in Org's agenda view.
 
-`excorporate-update-diary' affects the behaviour of `excorporate'
+`excorporate-update-diary' affects the behavior of `excorporate'
 just after a server connection is established.  Changes to this
 variable do not take effect unless `excorporate' is re-run.  If
 one wants to disable or enable Excorporate diary support
