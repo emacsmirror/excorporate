@@ -297,6 +297,7 @@ ARGUMENTS are the arguments to `diary-view-entries'."
   (appt-activate 1)
   (message "Excorporate diary support enabled."))
 
+;;;###autoload
 (defun excorporate-diary-disable ()
   "Disable Excorporate diary support."
   (interactive)
