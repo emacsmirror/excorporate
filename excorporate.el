@@ -67,10 +67,6 @@
 ;; the main domain, e.g., autodiscover.domain.com.  Autodiscovery will
 ;; work in that case.
 
-;; Excorporate must be loaded before any other package that requires
-;; `soap-client'.  The version of `soap-client' that Excorporate
-;; bundles is backward compatible.
-
 ;; Acknowledgments:
 
 ;; Alexandru Harsanyi <AlexHarsanyi@gmail.com> provided help and
