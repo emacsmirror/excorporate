@@ -122,6 +122,7 @@
 (require 'fsm)
 (require 'excorporate-calendar)
 (require 'org)
+(require 'excorporate-time-zone)
 
 (defgroup excorporate nil
   "Exchange support."
@@ -142,6 +143,18 @@ dynamically, without re-running `excorporate', one can call the
 interactive functions, `excorporate-diary-disable' and
 `excorporate-diary-enable'."
   :type 'boolean)
+
+(defcustom excorporate-time-zone nil
+  "The server-style time zone.
+If this variable is nil, Excorporate will compute a time zone
+automatically based on `current-time-zone'.  If that doesn't
+work, or you want to specify the time zone directly, run
+`excorporate-customize-time-zone' to customize this variable from
+a list of valid values."
+  :type '(choice :menu-tag "Server-style time zone"
+		 :tag "Server-style time zone"
+		 (const :tag "Compute from Emacs time zone" nil)
+		 string))
 
 ;; For Office 365, URLs containing autodiscover-s.outlook.com do not
 ;; seem to work properly (the returned XML gives ErrorCode 600).
@@ -753,6 +766,7 @@ creation."
        (CalendarItem
 	(Subject . ,subject)
 	(Body (BodyType . "Text") ,body)
+	(StartTimeZone (Id . ,(exco-time-zone)))
         (Start . ,(exco-format-date-time start))
         (End . ,(exco-format-date-time end))
         (Location . ,location)
@@ -831,6 +845,7 @@ appointment creation."
 		    (CalendarItem
                      (Subject . ,subject)
 		     (Body (BodyType . "Text") ,body)
+		     (StartTimeZone (Id . ,(exco-time-zone)))
                      (Start . ,(exco-format-date-time start))
                      (End . ,(exco-format-date-time end)))))
 		  nil nil nil nil)

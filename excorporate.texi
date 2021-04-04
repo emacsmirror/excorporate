@@ -435,7 +435,9 @@ the asynchronous calls to avoid blocking Emacs during server operations.
 @noindent
 Here is a more complicated example that asynchronously queries the
 server for availability overlap for hacker1@@gnu.org and
-hacker2@@gnu.org, in the Eastern Time time zone.
+hacker2@@gnu.org, in the America/Toronto time zone.  Call
+@code{exco-time-zone} to calculate, from Emacs's internal time zone (see
+@code{current-time-zone}), the equivalent server time zone string.
 
 @example
 @group
@@ -469,6 +471,7 @@ hacker2@@gnu.org, in the Eastern Time time zone.
       (ExcludeConflicts . nil)))
     (FreeBusyViewOptions
      (TimeWindow
+      (StartTimeZone (Id . "Eastern Standard Time"))
       (StartTime . "2020-09-25T00:00:00Z")
       (EndTime . "2020-09-25T23:59:00Z"))
      (MergedFreeBusyIntervalInMinutes . 60)
