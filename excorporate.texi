@@ -120,6 +120,10 @@ After saving the configuration, try @code{M-x excorporate} again.
 If neither autodiscovery nor specifying the EWS URL work,
 @pxref{Troubleshooting}.
 
+To disconnect:
+
+@code{M-x excorporate-disconnect}
+
 @node Usage
 @chapter Usage
 

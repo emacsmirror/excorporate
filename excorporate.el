@@ -287,6 +287,9 @@ the FSM should transition to on success."
 				      (format "Failed to retrieve %s"
 					      import-url))
 			   (fsm-send fsm :unrecoverable-error))
+		       ;; Here (get-buffer-process (current-buffer))
+		       ;; is nil, so we can't track network processes
+		       ;; to be used in exco-disconnect.
 		       ;; Success, parse WSDL.
 		       (plist-put state-data :retrying nil)
 		       (setf (soap-wsdl-xmlschema-imports wsdl) imports)
@@ -700,6 +703,22 @@ Examples are \"Exchange2010\", \"Exchange2010_SP1\",
   "Disconnect from a web service.
 IDENTIFIER is the mail address used to look up the connection."
   (exco--with-fsm identifier
+    ;; There does not seem to be a way to track network processes via
+    ;; URL callbacks, so search the process list and close matching
+    ;; connections.
+    (let* ((url (plist-get (fsm-get-state-data fsm) :service-url))
+	   (host (url-host (url-generic-parse-url url))))
+      (dolist (process (process-list))
+	(let* ((contact (process-contact process t))
+	       (process-name (plist-get contact :name))
+	       (process-host (plist-get contact :host))
+	       (process-port (plist-get contact :service)))
+	  (when (and (equal process-name host)
+		     (equal process-host host)
+		     (equal process-port 443))
+	    (delete-process process)))))
+    (let ((process (plist-get (fsm-get-state-data fsm) :process)))
+      (when process (delete-process process)))
     (setq exco--connection-identifiers
 	  (delete identifier exco--connection-identifiers))
     (remhash identifier exco--connections))
@@ -1221,7 +1240,7 @@ ARGUMENT is the prefix argument."
 	   (identifier
 	    (if (y-or-n-p ask-2)
 		mail
-	      (cons mail(completing-read ask-3 (list url) nil nil url)))))
+	      (cons mail (completing-read ask-3 (list url) nil nil url)))))
       (exco-connect identifier)))
    ((exco--string-or-string-pair-p excorporate-configuration)
     ;; A single string or a single pair.
@@ -1234,6 +1253,33 @@ ARGUMENT is the prefix argument."
 	(warn "Skipping invalid configuration: %s" configuration))))
    (t
     (error "Excorporate: Invalid configuration"))))
+
+(defun excorporate-disconnect ()
+  "Disconnect a server connection."
+  (interactive)
+  (catch 'cancel
+    (let ((identifier
+	   (cond
+	    ((= (length exco--connection-identifiers) 0)
+	     (exco--ensure-connection))
+	    ((= (length exco--connection-identifiers) 1)
+	     (car exco--connection-identifiers))
+	    (t
+	     (let* ((strings (mapcar (lambda (object)
+				       (format "%s" object))
+				     exco--connection-identifiers))
+		    (value (completing-read "Excorporate: Disconnect: "
+					    strings nil t))
+		    (return (when (equal value "") (throw 'cancel nil)))
+		    (position (catch 'index
+				(let ((index 0))
+				  (dolist (string strings)
+				    (when (equal value string)
+				      (throw 'index index))
+				    (setq index (1+ index))))) ))
+	       (nth position exco--connection-identifiers))))))
+      (exco-disconnect identifier)
+      (message "Excorporate: Disconnected %s" identifier))))
 
 (provide 'excorporate)
 
