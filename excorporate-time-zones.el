@@ -841,8 +841,9 @@
 	       (cons "Emacs Built-in"
 		     (hash-table-values exco--time-zone-olson-to-server))
 	       nil t)))
-    (customize-save-variable 'excorporate-time-zone
-			     (if (equal zone "Emacs Built-in") nil zone))))
+    (unless (equal zone "")
+      (customize-save-variable 'excorporate-time-zone
+			       (if (equal zone "Emacs Built-in") nil zone)))))
 
 (defun exco-time-zone (&optional emacs-time-zone)
   "Return server style time zone string.
