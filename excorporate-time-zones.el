@@ -833,18 +833,6 @@
   (concat "A hash table mapping `current-time-zone' values to"
 	  " IANA/Olson time zone names."))
 
-(defun excorporate-customize-time-zone ()
-  "Prompt for a server-style time zone from a list of valid values."
-  (interactive)
-  (let ((zone (completing-read
-	       "Excorporate time zone: "
-	       (cons "Emacs Built-in"
-		     (hash-table-values exco--time-zone-olson-to-server))
-	       nil t)))
-    (unless (equal zone "")
-      (customize-save-variable 'excorporate-time-zone
-			       (if (equal zone "Emacs Built-in") nil zone)))))
-
 (defun exco-time-zone (&optional emacs-time-zone)
   "Return server style time zone string.
 Return `excorporate-time-zone' if it is non-nil, or look up the

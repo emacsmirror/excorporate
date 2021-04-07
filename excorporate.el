@@ -118,7 +118,7 @@
 (require 'fsm)
 (require 'excorporate-calendar)
 (require 'org)
-(require 'excorporate-time-zone)
+(require 'excorporate-time-zones)
 
 (defgroup excorporate nil
   "Exchange support."
@@ -1253,6 +1253,18 @@ ARGUMENT is the prefix argument."
 	(warn "Skipping invalid configuration: %s" configuration))))
    (t
     (error "Excorporate: Invalid configuration"))))
+
+(defun excorporate-customize-time-zone ()
+  "Prompt for a server-style time zone from a list of valid values."
+  (interactive)
+  (let ((zone (completing-read
+	       "Excorporate time zone: "
+	       (cons "Emacs Built-in"
+		     (hash-table-values exco--time-zone-olson-to-server))
+	       nil t)))
+    (unless (equal zone "")
+      (customize-save-variable 'excorporate-time-zone
+			       (if (equal zone "Emacs Built-in") nil zone)))))
 
 (defun excorporate-disconnect ()
   "Disconnect a server connection."
