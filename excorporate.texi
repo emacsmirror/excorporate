@@ -66,6 +66,7 @@ welcome, as are patches to enable more of these access scenarios.  See
 * Usage::                       Using @code{excorporate}.
 * Troubleshooting::             Debugging why a connection failed
 * API Usage::                   Using the API provided by @code{excorporate}.
+* Index::
 @end menu
 
 @node Reporting Bugs
@@ -282,6 +283,28 @@ Excorporate's dependencies implement the tricky elements of
 asynchronous Exchange access: a state machine (@code{fsm}), TLS
 negotiation (@code{gnutls}), NTLM authentication (@code{ntlm} and
 @code{url-http-ntlm}) and SOAP communication (@code{soap-client}).
+
+@cindex hung connection
+@cindex stuck connection
+@noindent
+On some servers, an active, otherwise-working connection may get stuck.
+The symptom is the attempted operation will not complete (but Emacs will
+not be blocked, because Excorporate is asynchronous).  For example
+pressing 'e' in the @code{Calendar} produce a new @code{*Excorporate*}
+buffer that stays empty for longer than one minute.  I haven't been able
+to determine the root cause of this behaviour.  But you can work around
+the issue like this:
+
+@code{M-x list-processes}
+
+Find a line that shows the server connection.  There may be multiple
+such lines.  They will look something like this:
+
+@code{mail.gnu.org -- open -- -- Main (network connection to mail.gnu.org:443}
+
+Put the cursor on that line, and type 'd' to delete the process.  The
+attempted operation will now complete, usually without needing to retry
+it.
 
 @node API Usage
 @chapter API Usage
@@ -801,5 +824,10 @@ useful; file a bug with a patch against
 stay backward compatible.  If an existing function has an insufficient
 interface, make a new one.  Excorporate functions are written to work
 with older Emacs versions, back to Emacs 24.1.
+
+@node Index
+@unnumbered Index
+
+@printindex cp
 
 @bye

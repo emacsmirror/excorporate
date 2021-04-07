@@ -56,6 +56,7 @@ welcome, as are patches to enable more of these access scenarios.  See
 * Usage::                       Using 'excorporate'.
 * Troubleshooting::             Debugging why a connection failed
 * API Usage::                   Using the API provided by 'excorporate'.
+* Index::
 
 
 File: excorporate.info,  Node: Reporting Bugs,  Next: Installation,  Prev: Top,  Up: Top
@@ -108,6 +109,10 @@ After saving the configuration, try 'M-x excorporate' again.
 
 If neither autodiscovery nor specifying the EWS URL work, *note
 Troubleshooting::.
+
+   To disconnect:
+
+   'M-x excorporate-disconnect'
 
 
 File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configuration,  Up: Top
@@ -246,8 +251,28 @@ Exchange access: a state machine ('fsm'), TLS negotiation ('gnutls'),
 NTLM authentication ('ntlm' and 'url-http-ntlm') and SOAP communication
 ('soap-client').
 
+On some servers, an active, otherwise-working connection may get stuck.
+The symptom is the attempted operation will not complete (but Emacs will
+not be blocked, because Excorporate is asynchronous).  For example
+pressing 'e' in the 'Calendar' produce a new '*Excorporate*' buffer that
+stays empty for longer than one minute.  I haven't been able to
+determine the root cause of this behaviour.  But you can work around the
+issue like this:
+
+   'M-x list-processes'
+
+   Find a line that shows the server connection.  There may be multiple
+such lines.  They will look something like this:
+
+   'mail.gnu.org -- open -- -- Main (network connection to
+mail.gnu.org:443'
+
+   Put the cursor on that line, and type 'd' to delete the process.  The
+attempted operation will now complete, usually without needing to retry
+it.
+
 
-File: excorporate.info,  Node: API Usage,  Prev: Troubleshooting,  Up: Top
+File: excorporate.info,  Node: API Usage,  Next: Index,  Prev: Troubleshooting,  Up: Top
 
 6 API Usage
 ***********
@@ -390,7 +415,9 @@ the asynchronous calls to avoid blocking Emacs during server operations.
 
 Here is a more complicated example that asynchronously queries the
 server for availability overlap for hacker1@gnu.org and hacker2@gnu.org,
-in the Eastern Time time zone.
+in the America/Toronto time zone.  Call 'exco-time-zone' to calculate,
+from Emacs's internal time zone (see 'current-time-zone'), the
+equivalent server time zone string.
 
      (exco-operate
       (car exco--connection-identifiers)
@@ -422,6 +449,7 @@ in the Eastern Time time zone.
            (ExcludeConflicts . nil)))
          (FreeBusyViewOptions
           (TimeWindow
+           (StartTimeZone (Id . "Eastern Standard Time"))
            (StartTime . "2020-09-25T00:00:00Z")
            (EndTime . "2020-09-25T23:59:00Z"))
           (MergedFreeBusyIntervalInMinutes . 60)
@@ -727,16 +755,29 @@ backward compatible.  If an existing function has an insufficient
 interface, make a new one.  Excorporate functions are written to work
 with older Emacs versions, back to Emacs 24.1.
 
+
+File: excorporate.info,  Node: Index,  Prev: API Usage,  Up: Top
+
+Index
+*****
+
+ [index ]
+* Menu:
+
+* hung connection:                       Troubleshooting.      (line 80)
+* stuck connection:                      Troubleshooting.      (line 80)
+
 
 
 Tag Table:
 Node: Top1103
-Node: Reporting Bugs2399
-Node: Installation2723
-Node: Configuration2997
-Node: Usage4017
-Node: Troubleshooting6476
-Node: API Usage9344
+Node: Reporting Bugs2409
+Node: Installation2733
+Node: Configuration3007
+Node: Usage4079
+Node: Troubleshooting6538
+Node: API Usage10221
+Node: Index27455
 
 End Tag Table
 
