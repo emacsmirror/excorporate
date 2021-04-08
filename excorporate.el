@@ -661,6 +661,28 @@ use the `cdr' of the pair as the service URL."
 	(fsm-send fsm :retrieve-xml))
       nil)))
 
+(defun exco-select-connection-identifier ()
+  "Return a connection identifier.
+Return the sole connection if only one exists, or prompt the user
+if more than one connection exists.  Return nil if the user
+provides a null response"
+  (exco--ensure-connection)
+  (if (= (length exco--connection-identifiers) 1)
+      (car exco--connection-identifiers)
+    (let* ((strings (mapcar (lambda (object)
+			      (format "%s" object))
+			    exco--connection-identifiers))
+	   (value (completing-read "Excorporate connection: "
+				   strings nil t)))
+      (unless (equal value "")
+	(let ((position (catch 'index
+			  (let ((index 0))
+			    (dolist (string strings)
+			      (when (equal value string)
+				(throw 'index index))
+			      (setq index (1+ index)))))))
+	  (nth position exco--connection-identifiers))))))
+
 (defun exco-operate (identifier name arguments callback)
   "Execute a service operation asynchronously.
 IDENTIFIER is the connection identifier.  Execute operation NAME
@@ -1249,27 +1271,9 @@ ARGUMENT is the prefix argument."
 (defun excorporate-disconnect ()
   "Disconnect a server connection."
   (interactive)
-  (catch 'cancel
-    (let ((identifier
-	   (cond
-	    ((= (length exco--connection-identifiers) 0)
-	     (exco--ensure-connection))
-	    ((= (length exco--connection-identifiers) 1)
-	     (car exco--connection-identifiers))
-	    (t
-	     (let* ((strings (mapcar (lambda (object)
-				       (format "%s" object))
-				     exco--connection-identifiers))
-		    (value (completing-read "Excorporate: Disconnect: "
-					    strings nil t))
-		    (_return (when (equal value "") (throw 'cancel nil)))
-		    (position (catch 'index
-				(let ((index 0))
-				  (dolist (string strings)
-				    (when (equal value string)
-				      (throw 'index index))
-				    (setq index (1+ index))))) ))
-	       (nth position exco--connection-identifiers))))))
+  (exco--ensure-connection)
+  (let ((identifier (exco-select-connection-identifier)))
+    (when identifier
       (exco-disconnect identifier)
       (message "Excorporate: Disconnected %s" identifier))))
 

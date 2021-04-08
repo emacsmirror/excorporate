@@ -322,7 +322,7 @@ Excorporate:
 @example
 @group
 (exco-calendar-item-meeting-create
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "Test meeting 1"
  "Hi,\n\nThis is a test meeting 1.\n\nRegards.\n"
  (encode-time 0 15 14 23 09 2020)
@@ -351,11 +351,14 @@ Excorporate:
 The callback is run asychronously after the server responds, so as not
 to block Emacs, and the result is what is printed in the
 @code{*Messages*} buffer.  This example assumes the user has already run
-@kbd{M-x excorporate} to create a connection.  @code{(car
-exco--connection-identifiers)} is a hack that uses the first-established
-connection.  Excorporate fully supports connecting to multiple different
-servers though (see @code{exco-connection-iterate}) so published code
-that uses the Excorporate API should not assume just one connection.
+@kbd{M-x excorporate} to create a connection.
+@code{exco-select-connection-identifier} will automatically use the sole
+connection if only one exists.  Excorporate fully supports connecting to
+multiple different servers though (see @code{exco-connection-iterate})
+so reusable code that calls Excorporate APIs should not assume just one
+connection.  You can find examples of iterating through multiple
+connections in @code{excorporate-diary.el} and
+@code{excorporate-org.el}.
 
 @noindent
 There is lots of server-side functionality that Excorporate does not
@@ -373,7 +376,7 @@ PROPERTIES drawer of calendar entries in the interactive Org buffer.
 @example
 @group
 (exco-operate-synchronously
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "GetItem"
  '(((ItemShape
      (BaseShape . "AllProperties"))
@@ -469,7 +472,7 @@ hacker2@@gnu.org, in the America/Toronto time zone.  Call
 @example
 @group
 (exco-operate
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "GetUserAvailability"
  '(((TimeZone
      (Bias . 300)
@@ -611,7 +614,7 @@ complicated server functionality, but for now they can all be left
 @example
 @group
 (exco-operate
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "CreateItem"
  `(((SendMeetingInvitations . "SendToAllAndSaveCopy")
     (Items
@@ -658,7 +661,7 @@ zone details:
 @example
 @group
 (exco-operate
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "GetItem"
  '(((ItemShape
      (BaseShape . "AllProperties"))
@@ -795,7 +798,7 @@ returned as @code{(CalendarItem (ItemId ...) ...)} by the above
 @example
 @group
 (exco-operate
- (car exco--connection-identifiers)
+ (exco-select-connection-identifier)
  "DeleteItem"
  '(((DeleteType . "MoveToDeletedItems")
     (SendMeetingCancellations . "SendToNone")

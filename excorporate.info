@@ -286,7 +286,7 @@ hacker2@gnu.org is invited, using a non-interactive function provided by
 Excorporate:
 
      (exco-calendar-item-meeting-create
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "Test meeting 1"
       "Hi,\n\nThis is a test meeting 1.\n\nRegards.\n"
       (encode-time 0 15 14 23 09 2020)
@@ -312,11 +312,13 @@ Excorporate:
 The callback is run asychronously after the server responds, so as not
 to block Emacs, and the result is what is printed in the '*Messages*'
 buffer.  This example assumes the user has already run 'M-x excorporate'
-to create a connection.  '(car exco--connection-identifiers)' is a hack
-that uses the first-established connection.  Excorporate fully supports
-connecting to multiple different servers though (see
-'exco-connection-iterate') so published code that uses the Excorporate
-API should not assume just one connection.
+to create a connection.  'exco-select-connection-identifier' will
+automatically use the sole connection if only one exists.  Excorporate
+fully supports connecting to multiple different servers though (see
+'exco-connection-iterate') so reusable code that calls Excorporate APIs
+should not assume just one connection.  You can find examples of
+iterating through multiple connections in 'excorporate-diary.el' and
+'excorporate-org.el'.
 
 There is lots of server-side functionality that Excorporate does not
 provide high-level non-interactive functions for.  Using that
@@ -330,7 +332,7 @@ accepted, unknown).  You can find ItemId forms to experiment with in the
 PROPERTIES drawer of calendar entries in the interactive Org buffer.
 
      (exco-operate-synchronously
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "GetItem"
       '(((ItemShape
           (BaseShape . "AllProperties"))
@@ -420,7 +422,7 @@ from Emacs's internal time zone (see 'current-time-zone'), the
 equivalent server time zone string.
 
      (exco-operate
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "GetUserAvailability"
       '(((TimeZone
           (Bias . 300)
@@ -556,7 +558,7 @@ nils with a length matching the number of arguments that the
 server functionality, but for now they can all be left 'nil'.
 
      (exco-operate
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "CreateItem"
       `(((SendMeetingInvitations . "SendToAllAndSaveCopy")
          (Items
@@ -598,7 +600,7 @@ Now we can retrieve the item's properties to see the recurrence and time
 zone details:
 
      (exco-operate
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "GetItem"
       '(((ItemShape
           (BaseShape . "AllProperties"))
@@ -728,7 +730,7 @@ returned as '(CalendarItem (ItemId ...) ...)' by the above 'GetItem'
 operation, whose 'CalendarType' element is "RecurringMaster".
 
      (exco-operate
-      (car exco--connection-identifiers)
+      (exco-select-connection-identifier)
       "DeleteItem"
       '(((DeleteType . "MoveToDeletedItems")
          (SendMeetingCancellations . "SendToNone")
@@ -777,7 +779,7 @@ Node: Configuration3007
 Node: Usage4079
 Node: Troubleshooting6538
 Node: API Usage10221
-Node: Index27455
+Node: Index27583
 
 End Tag Table
 
