@@ -963,6 +963,10 @@ On each iteration, ITEM is set, and FORMS are run."
 					 (split-string cc-invitees ";"))))
 	    (item-identifier (assoc 'ItemId ,item))
 	    (organizer-structure (assoc 'Organizer ,item)))
+       ;; Silence byte compiler if any of these are unused.
+       (ignore subject start start-internal end end-internal location
+	       to-invitees main-invitees cc-invitees optional-invitees
+	       item-identifier organizer-structure)
        ,@forms)))
 
 (defun exco-calendar-item-with-details-iterate (identifier
