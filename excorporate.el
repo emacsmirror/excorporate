@@ -1258,7 +1258,7 @@ ARGUMENT is the prefix argument."
 				     exco--connection-identifiers))
 		    (value (completing-read "Excorporate: Disconnect: "
 					    strings nil t))
-		    (return (when (equal value "") (throw 'cancel nil)))
+		    (_return (when (equal value "") (throw 'cancel nil)))
 		    (position (catch 'index
 				(let ((index 0))
 				  (dolist (string strings)
