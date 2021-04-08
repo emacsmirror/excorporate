@@ -29,6 +29,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 ;; Generated with:
 
 ;;(insert
@@ -852,7 +854,10 @@ a list of valid values."
   (let ((zone (completing-read
 	       "Excorporate time zone: "
 	       (cons "Emacs Built-in"
-		     (hash-table-values exco--time-zone-olson-to-server))
+		     (cl-loop ; hash-table-values when Emacs < 24.4
+		      for v being the hash-values of
+		      exco--time-zone-olson-to-server
+		      collect v))
 	       nil t)))
     (unless (equal zone "")
       (customize-save-variable 'excorporate-time-zone
