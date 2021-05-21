@@ -1,6 +1,6 @@
 ;;; excorporate-calendar.el --- Exchange for calendar -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2016 Free Software Foundation, Inc.
+;; Copyright (C) 2014-2021 Free Software Foundation, Inc.
 
 ;; Author: Thomas Fitzsimmons <fitzsim@fitzsim.org>
 ;; Keywords: calendar
@@ -37,8 +37,6 @@
   (interactive)
   (apply excorporate-calendar-show-day-function (calendar-cursor-to-date t)))
 
-;; I arrogantly claim "e" for now, but irresponsibly reserve the right
-;; to change it later.
 (define-key calendar-mode-map "e" #'exco-calendar-show-day)
 
 (provide 'excorporate-calendar)

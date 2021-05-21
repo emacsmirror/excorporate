@@ -310,6 +310,12 @@ it.
 @chapter API Usage
 
 @noindent
+As of version 1.0.0, the Excorporate API is declared stable.  The
+function @code{exco-api-version} will return 0, meaning API version 0.
+In the unlikely event that compatibility needs to be broken, the API
+version will be incremented.
+
+@noindent
 Here are some examples of using the API (application programming
 interface) provided by Excorporate.
 

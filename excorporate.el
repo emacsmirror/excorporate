@@ -633,8 +633,7 @@ IDENTIFIER."
 (defun exco-api-version ()
   "Return the Excorporate API version.
 Return a non-negative integer representing the current
-Excorporate application programming interface version.  Version 0
-is subject to change."
+Excorporate application programming interface version."
   0)
 
 (defun exco-connect (identifier)

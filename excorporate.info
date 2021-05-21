@@ -277,6 +277,11 @@ File: excorporate.info,  Node: API Usage,  Next: Index,  Prev: Troubleshooting, 
 6 API Usage
 ***********
 
+As of version 1.0.0, the Excorporate API is declared stable.  The
+function 'exco-api-version' will return 0, meaning API version 0.  In
+the unlikely event that compatibility needs to be broken, the API
+version will be incremented.
+
 Here are some examples of using the API (application programming
 interface) provided by Excorporate.
 
@@ -779,7 +784,7 @@ Node: Configuration3007
 Node: Usage4079
 Node: Troubleshooting6538
 Node: API Usage10221
-Node: Index27583
+Node: Index27815
 
 End Tag Table
 
