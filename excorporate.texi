@@ -168,7 +168,7 @@ accept, invoke (@code{exco-org-tentatively-accept-meeting-request}).
 Pass a prefix argument to these functions to omit a reply message.
 
 A meeting is a calendar event to which at least one other person is
-invited.  To cancel a meeting (or an occurence of a recurring meeting)
+invited.  To cancel a meeting (or an occurrence of a recurring meeting)
 that you organized, use @kbd{M-x exco-org-cancel-meeting}.
 
 An appointment is a calendar item that has no invitees.  To delete an
@@ -354,7 +354,7 @@ Excorporate:
 @end example
 
 @noindent
-The callback is run asychronously after the server responds, so as not
+The callback is run asynchronously after the server responds, so as not
 to block Emacs, and the result is what is printed in the
 @code{*Messages*} buffer.  This example assumes the user has already run
 @kbd{M-x excorporate} to create a connection.
@@ -578,7 +578,7 @@ hacker2@@gnu.org, in the America/Toronto time zone.  Call
        (BusyType . "Busy")
        (CalendarEventDetails
         (ID . "0[...]0")
-        (Subject . "An occurence of a recurring meeting")
+        (Subject . "An occurrence of a recurring meeting")
         (Location)
         (IsMeeting . t)
         (IsRecurring . t)
