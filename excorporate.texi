@@ -143,6 +143,9 @@ If you leave Emacs running overnight, at 12:01 AM @code{appt} (via
 Excorporate) will retrieve your meetings and display your diary so
 that you see the day's events first thing in the morning.
 
+You can include these entries in your Org Mode agenda by customizing
+@code{org-agenda-include-diary}.
+
 @noindent
 Open the calendar with:
 
