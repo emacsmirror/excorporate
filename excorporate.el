@@ -8,7 +8,7 @@
 ;; Version: 1.0.0
 ;; Keywords: calendar
 ;; Homepage: https://www.fitzsim.org/blog/
-;; Package-Requires: ((emacs "24.1") (cl-lib "0.6.1") (fsm "0.2.1") (soap-client "3.2.0") (url-http-ntlm "2.0.4") (nadvice "0.3"))
+;; Package-Requires: ((emacs "24.1") (cl-lib "0.6.1") (fsm "0.2.1") (soap-client "3.2.0") (url-http-ntlm "2.0.4") (nadvice "0.3") (url-http-oauth "0.8.3"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,45 +27,23 @@
 
 ;; Excorporate provides Exchange integration for Emacs.
 
-;; To create a connection to a web service:
+;; Usage:
+
+;; Customize `excorporate-configuration'.  To use OAuth 2.0, at a
+;; minimum you will need to set the "client-identifier" and the
+;; "login_hint" fields.
+
+;; Then:
 
 ;; M-x excorporate
 
-;; Excorporate will prompt for an email address that it will use to
-;; automatically discover settings.  Then it will connect to two or
-;; three separate hosts: the autodiscovery host, the web service host
-;; or load balancer, and the actual server if there is a load
-;; balancer.  Therefore you may be prompted for your credentials two
-;; or three times.
-
 ;; You should see a message indicating that the connection is ready
-;; either in the minibuffer or failing that in the *Messages* buffer.
+;; either in the minibuffer or in the *Messages* buffer.
 
-;; Finally, run M-x calendar, and press 'e' to show today's meetings.
+;; Run M-x calendar, and press 'e' to show today's meetings.
 
-;; Please try autodiscovery first and report issues not yet listed
-;; below.  When autodiscovery works it is very convenient; the goal is
-;; to make it work for as many users as possible.
-
-;; If autodiscovery fails, customize `excorporate-configuration' to
-;; skip autodiscovery.
-
-;; Autodiscovery will fail if:
-
-;; - Excorporate is accessing the server through a proxy (Emacs
-;;   bug#10).
-
-;; - The server is not configured to support autodiscovery.
-
-;; - The email address is at a different domain than the server, e.g.,
-;;   user@domain1.com, autodiscover.domain2.com.
-
-;; - Authentication is Kerberos/GSSAPI.
-
-;; Excorporate does know about the special case where the mail address
-;; is at a subdomain, e.g., user@sub.domain.com, and the server is at
-;; the main domain, e.g., autodiscover.domain.com.  Autodiscovery will
-;; work in that case.
+;; For configuration suggestions and connection troubleshooting tips, see
+;; the Excorporate Info node at C-h i d m Excorporate.
 
 ;; Acknowledgments:
 
@@ -119,6 +97,7 @@
 (require 'excorporate-calendar)
 (require 'org)
 (require 'excorporate-time-zones)
+(require 'url-http-oauth)
 
 (defgroup excorporate nil
   "Exchange support."
@@ -293,12 +272,29 @@ the FSM should transition to on success."
 	(list state-data nil)
       (list next-state state-data nil))))
 
+(defun exco--oauth-resource-url (value)
+  "Return resource-url if VALUE is an OAuth 2.0 settings alist, nil otherwise."
+  (let* ((result (ignore-errors (assoc "resource-url" value)))
+	 (url (cdr result)))
+    (when (and result (stringp url))
+      url)))
+
 (define-state-machine exco--fsm :start
   ((identifier)
    "Start an Excorporate finite state machine."
    (let* ((autodiscover (stringp identifier))
-	  (mail (if autodiscover identifier (car identifier)))
-	  (url (unless autodiscover (cdr identifier)))
+	  (oauth-url (exco--oauth-resource-url identifier))
+	  (mail (if autodiscover
+		    identifier
+		  (if oauth-url
+		      (cdr (assoc "login_hint"
+				  (cdr (assoc "authorization-extra-arguments"
+					      identifier))))
+		    (car identifier))))
+	  (url (if autodiscover
+		   nil
+		 (or oauth-url
+		     (cdr identifier))))
 	  (autodiscovery-urls
 	   (when autodiscover
 	     (let ((domain (cadr (split-string mail "@"))))
@@ -645,9 +641,12 @@ If IDENTIFIER is a mail address, `exco-connect' will use it to
 autodiscover the service URL to use.  If IDENTIFIER is a pair,
 `exco-connect' will not perform autodiscovery, but will instead
 use the `cdr' of the pair as the service URL."
-  (let ((autodiscover (stringp identifier)))
+  (let ((autodiscover (stringp identifier))
+	(oauth-url (exco--oauth-resource-url identifier)))
     (when autodiscover
       (message "Excorporate: Starting autodiscovery for %s" identifier))
+    (when oauth-url
+      (url-http-oauth-interpose identifier))
     (let ((fsm (start-exco--fsm identifier)))
       (unless exco--connections
 	(setq exco--connections (make-hash-table :test 'equal)))
@@ -1208,17 +1207,101 @@ Examples:
 Other Excorporate documentation refers to the email address as
 the \"mail address\", and the EWS URL as the \"service URL\"."
   :type
-  '(choice
-    (const
-     :tag "Prompt for Exchange account information" nil)
+  `(choice
+    ;; FIXME: Customize bug#63290 causes the const form to add blank
+    ;; values to the alist defaults:
+    ;;     [INS] [DEL] Argument name:
+    ;;		       Argument value:
+    ;; and:
+    ;; [INS] [DEL] OAuth 2.0 setting name:
+    ;;		   OAuth 2.0 setting value:
+    (const :tag "Prompt for Exchange account information" nil)
     #1=(string
 	:tag "Exchange email address (autodiscover settings)")
     #2=(cons
 	:tag "Exchange email address and EWS URL (no autodiscovery)"
 	(string :tag "Exchange mail address (e.g., hacker@gnu.org)")
 	(string :tag "EWS URL (e.g., https://mail.gnu.org/EWS/Exchange.asmx)"))
-    (repeat :tag "List of configurations"
-	    (choice #1# #2#))))
+    #3=(alist :tag "EWS URL OAuth 2.0 settings (no autodiscovery)"
+	      :key-type (string :tag "OAuth 2.0 setting name")
+	      :value-type (string :tag "OAuth 2.0 setting value")
+	      :options
+	      (("resource-url"
+		(string :tag "EWS URL"
+			"https://outlook.office365.com/EWS/Exchange.asmx"))
+	       ("resource-url-prefixes"
+		(list
+		 (string :tag "EWS URLs with these prefixes will also use bearer"
+			 "https://outlook.office365.com/EWS/")))
+	       ("authorization-endpoint"
+		(string :tag "Authorization URL"
+			,(concat "https://login.microsoftonline.com"
+				 "/ecdd899a-33be-4c33-91e4-1f1144fc2f56"
+				 "/oauth2/authorize")))
+	       ("access-token-endpoint"
+		(string :tag "Access-token URL"
+			,(concat "https://login.microsoftonline.com"
+				 "/ecdd899a-33be-4c33-91e4-1f1144fc2f56"
+				 "/oauth2/token")))
+	       ("client-identifier"
+		(string :tag "Client identifier"
+			;; FIXME: It would be nice if Microsoft
+			;; provided a "Generic Free Software
+			;; application" client identifier for use by
+			;; Free Software projects that, for whatever
+			;; reason, do not want to register as EWS
+			;; clients.  That client identifier could be
+			;; hard-coded here.
+			;; FIXME: Failing that, the Free Software
+			;; Foundation could register Emacs as an EWS
+			;; client and then hard-code the assigned
+			;; client identifier here.
+			;; FIXME: Failing that, the user must do the
+			;; registration themselves.  See
+			;; https://wiki.gnome.org/Apps/Evolution/EWS/OAuth2
+			;; for an excellent overview of the
+			;; registration process.
+			""))
+	       ("scope"
+		(string :tag "Access scope"
+			,(concat "openid"
+				 " offline_access"
+				 " profile"
+				 " Mail.ReadWrite"
+				 " Mail.ReadWrite.Shared"
+				 " Mail.Send"
+				 " Mail.Send.Shared"
+				 " Calendars.ReadWrite"
+				 " Calendars.ReadWrite.Shared"
+				 " Contacts.ReadWrite"
+				 " Contacts.ReadWrite.Shared"
+				 " Tasks.ReadWrite"
+				 " Tasks.ReadWrite.Shared"
+				 " MailboxSettings.ReadWrite"
+				 " People.Read"
+				 " User.ReadBasic.All")))
+	       ("authorization-extra-arguments"
+		(alist :tag "Extra arguments to authorization URL"
+		       :options (("resource"
+				  (string :value "https://outlook.office.com"))
+				 ("response_mode"
+				  (string :value "query"))
+				 ("login_hint"
+				  (string
+				   :value
+				   "change-this-to-your-EWS-email-address"))
+				 ("prompt"
+				  (string :value "login"))
+				 ("redirect_uri"
+				  (string
+				   :value
+				   ,(concat "https://login.microsoftonline.com"
+					    "/common/oauth2/nativeclient"))))
+		       :key-type (string :tag "Argument name")
+		       :value-type (string :tag "Argument value")))))
+    (repeat
+     :tag "List of configurations"
+     (choice #1# #2# #3#))))
 
 (defun exco--string-or-string-pair-p (value)
   "Return t if VALUE is a string or a pair of strings."
@@ -1248,20 +1331,26 @@ ARGUMENT is the prefix argument."
 	   (suggestion user-mail-address)
 	   (ask-1 "Exchange mail address: ")
 	   (ask-2 "Attempt settings autodiscovery ('n' for Office 365)?")
-	   (ask-3 "EWS URL: ")
+	   (ask-3 "Use OAuth 2.0?")
+	   (ask-4 "EWS URL: ")
 	   (mail (completing-read ask-1 (list suggestion) nil nil suggestion))
 	   (identifier
 	    (if (y-or-n-p ask-2)
 		mail
-	      (cons mail (completing-read ask-3 (list url) nil nil url)))))
+	      (if (y-or-n-p ask-3)
+		  (error "Please customize `excorporate-configuration'")
+		(cons mail (completing-read ask-4 (list url) nil nil url))))))
       (exco-connect identifier)))
-   ((exco--string-or-string-pair-p excorporate-configuration)
+   ((or (exco--string-or-string-pair-p excorporate-configuration)
+	(exco--oauth-resource-url excorporate-configuration))
     ;; A single string or a single pair.
     (exco-connect excorporate-configuration))
-   ((consp (cdr excorporate-configuration))
+   ((and (consp (cdr excorporate-configuration))
+	 (not (exco--oauth-resource-url excorporate-configuration)))
     ;; A proper list.
     (dolist (configuration excorporate-configuration)
-      (if (exco--string-or-string-pair-p configuration)
+      (if (or (exco--string-or-string-pair-p configuration)
+	      (exco--oauth-resource-url excorporate-configuration))
 	  (exco-connect configuration)
 	(warn "Skipping invalid configuration: %s" configuration))))
    (t
