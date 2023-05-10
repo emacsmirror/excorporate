@@ -1,4 +1,4 @@
-This is excorporate.info, produced by makeinfo version 6.7 from
+This is excorporate.info, produced by makeinfo version 6.8 from
 excorporate.texi.
 
 Copyright (C) 2016 Free Software Foundation, Inc.
@@ -31,15 +31,18 @@ Excorporate Manual
 
 Excorporate provides Exchange Web Services (EWS) support for Emacs.
 
-   If the Exchange server you access is configured to provide EWS
-support, then there's an 86% chance that Excorporate will enable you to
-retrieve your calendar entries from the comfort of Emacs.
+   If the server you access is configured to provide EWS support, then
+there's an 89% chance that Excorporate will enable you to retrieve your
+calendar entries from the comfort of Emacs.
 
-   The 14% failure rate is because authenticating against an Exchange
-server can be challenging.
+   The 11% failure rate is because authenticating against the server can
+be challenging.
 
-   Accessing an Exchange server through an HTTPS proxy is possible now
-that <https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10> and
+   Accessing a server via OAuth 2.0 should be possible now that
+<https://debbugs.gnu.org/cgi/bugreport.cgi?bug=50113> is implemented.
+
+   Accessing a server through an HTTPS proxy is possible now that
+<https://debbugs.gnu.org/cgi/bugreport.cgi?bug=10> and
 <https://debbugs.gnu.org/cgi/bugreport.cgi?bug=35969> are fixed.
 
    Kerberos/GSSAPI authentication needs more experimentation.
@@ -74,7 +77,9 @@ File: excorporate.info,  Node: Installation,  Next: Configuration,  Prev: Report
 2 Installation
 **************
 
-Excorporate works on Emacs versions >= 24.1.
+Excorporate and its dependencies should work on Emacs versions >= 24.1
+though not all Excorporate features have been tested on all versions of
+Emacs.
 
 Install 'excorporate' from the GNU ELPA repository:
 
@@ -86,33 +91,47 @@ File: excorporate.info,  Node: Configuration,  Next: Usage,  Prev: Installation,
 3 Configuration
 ***************
 
-Ideally you won't need to configure Excorporate beyond providing your
-account email address.  On friendly Exchange setups, Excorporate can
-discover the EWS URL automatically.
+Configure Excorporate using the Customize user interface:
 
-Run:
+   'M-x customize-variable RET excorporate-configuration'
+
+Excorporate supports two different forms of authentication: password and
+OAuth 2.0.
+
+For OAuth 2.0 select "EWS URL OAuth 2.0 settings (no autodiscovery)"
+from the choice menu.
+
+(The Customize UI has a bug
+<https://debbugs.gnu.org/cgi/bugreport.cgi?bug=63290>, so manually
+delete these entries: '[INS] [DEL] Argument name:/Argument value:' and:
+'[INS] [DEL] OAuth 2.0 setting name:/OAuth 2.0 setting value:'.)
+
+Adjust the OAuth 2.0 URL settings for your server.  How to discover
+these settings is not specified by the OAuth 2.0 specification and is
+out-of-scope for this manual.  Two fields you _must_ change are
+"client-identifier" and "login_hint".  "login_hint" is the email address
+you use to sign in to the server.  How to obtain "client-identifier" is
+not specified by the OAuth 2.0 specification and is out-of-scope for
+this manual, however an excellent overview is provided by the GNOME
+Wiki: <https://wiki.gnome.org/Apps/Evolution/EWS/OAuth2>.
+
+For password authentication, you can try the minibuffer configuration
+wizard by running:
 
    'M-x excorporate'
 
-which will prompt you for the Exchange account configuration.  Follow
+You will be prompted for the server configuration information.  Follow
 the prompts and if all goes well, you'll see a message in the minibuffer
 or in *Messages* saying that the connection is ready.  Using the
 prompts, you can first try with autodiscovery.  If autodiscovery runs
 out of URLs to try, re-run 'excorporate', saying 'n' to the
 autodiscovery attempt, at which point you will be asked for the EWS URL.
 
-To save a working configuration, customize 'excorporate-configuration':
+To save a working configuration, customize 'excorporate-configuration',
+as above.
 
-   'M-x customize-variable RET excorporate-configuration'
-
-After saving the configuration, try 'M-x excorporate' again.
-
-If neither autodiscovery nor specifying the EWS URL work, *note
-Troubleshooting::.
-
-   To disconnect:
-
-   'M-x excorporate-disconnect'
+If none of OAuth 2.0, autodiscovery, or specifying the EWS URL work,
+*note Troubleshooting::.
 
 
 File: excorporate.info,  Node: Usage,  Next: Troubleshooting,  Prev: Configuration,  Up: Top
@@ -126,13 +145,28 @@ this support, do:
 
    'M-x excorporate-diary-enable'
 
-   Excorporate's diary front-end will retrieve today's meetings.
+Excorporate's diary front-end will retrieve today's meetings.
 Subsequently 'appt' will pop up a reminder window several minutes prior
 to each meeting.
 
-   If you leave Emacs running overnight, at 12:01 AM 'appt' (via
+If you leave Emacs running overnight, at 12:01 AM 'appt' (via
 Excorporate) will retrieve your meetings and display your diary so that
-you see the day's events first thing in the morning.
+you see the day's events first thing in the morning.  Customize
+'appt-display-diary' to 'nil' to disable this behavior.
+
+To deal with OAuth 2.0 refresh tokens, 'url-http-oauth' needs to rewrite
+entries in netrc files listed in the 'auth-sources' variable.  If
+'auth-source-save-behavior' is 'ask', you will be prompted before the
+entry in 'auth-sources' is removed.  Beware that this may block Emacs at
+midnight if 'appt-display-diary' is 't'.  Once you are comfortable with
+'url-http-oauth''s rewriting, it is probably best to set to
+'auth-source-save-behavior' to 't', meaning "always save".  You may also
+want to customize 'midnight-hook' to remove 'clean-buffer-list',
+otherwise you might wonder why '*Messages*' shows many buffers being
+killed overnight.
+
+You can include Excorporate diary entries in your Org Mode agenda by
+customizing 'org-agenda-include-diary'.
 
 Open the calendar with:
 
@@ -170,6 +204,10 @@ cancellation message.
 
    If you prefer, you can install the 'calfw' package, and set
 'excorporate-calendar-show-day-function' to 'exco-calfw-show-day'.
+
+To disconnect:
+
+   'M-x excorporate-disconnect'
 
 
 File: excorporate.info,  Node: Troubleshooting,  Next: API Usage,  Prev: Usage,  Up: Top
@@ -756,7 +794,7 @@ operation, whose 'CalendarType' element is "RecurringMaster".
 
 Feel free to contribute new functions that you think others would find
 useful; file a bug with a patch against
-'https://git.savannah.gnu.org/git/emacs/elpa.git'.  Functions in
+<https://git.savannah.gnu.org/git/emacs/elpa.git>.  Functions in
 'excorporate.el' must always keep the same interface so that they stay
 backward compatible.  If an existing function has an insufficient
 interface, make a new one.  Excorporate functions are written to work
@@ -778,13 +816,13 @@ Index
 
 Tag Table:
 Node: Top1103
-Node: Reporting Bugs2409
-Node: Installation2733
-Node: Configuration3007
-Node: Usage4079
-Node: Troubleshooting6538
-Node: API Usage10221
-Node: Index27815
+Node: Reporting Bugs2517
+Node: Installation2841
+Node: Configuration3220
+Node: Usage5120
+Node: Troubleshooting8440
+Node: API Usage12123
+Node: Index29719
 
 End Tag Table
 
