@@ -1,5 +1,19 @@
 GNU Emacs Excorporate NEWS -- history of user-visible changes.
 
+* New in Excorporate 1.1.0
+
+Released 2023-05-10
+
+** Experimental OAuth 2.0 support
+
+Warning: To deal with OAuth 2.0 refresh tokens, `url-http-oauth' needs
+to delete then rewrite entries in netrc files listed in the
+`auth-sources' variable.  The netrc entry rewriting code is new and
+relatively untested so please back up these files before trying OAuth
+2.0 support.  Deletion respects the customization value of
+`auth-source-save-behavior'; if it is set to `ask', you will be
+prompted before the entry deletion happens.
+
 * New in Excorporate 1.0.0
 
 Released 2021-05-20
