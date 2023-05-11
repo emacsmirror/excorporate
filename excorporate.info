@@ -122,7 +122,7 @@ wizard by running:
 
 You will be prompted for the server configuration information.  Follow
 the prompts and if all goes well, you'll see a message in the minibuffer
-or in *Messages* saying that the connection is ready.  Using the
+or in '*Messages*' saying that the connection is ready.  Using the
 prompts, you can first try with autodiscovery.  If autodiscovery runs
 out of URLs to try, re-run 'excorporate', saying 'n' to the
 autodiscovery attempt, at which point you will be asked for the EWS URL.
@@ -243,14 +243,14 @@ Before even attempting Excorporate, you have to make these succeed:
       (url-retrieve-synchronously ews-url)
       (buffer-string))
 
-When this works, you'll see web page text in *Messages*, containing a
+When this works, you'll see web page text in '*Messages*', containing a
 message about having created a service.
 
      (with-current-buffer
       (url-retrieve-synchronously wsdl-url)
       (buffer-string))
 
-When this works, it will show a bunch of WSDL (XML) in *Messages*.
+When this works, it will show a bunch of WSDL (XML) in '*Messages*'.
 
 Debug the above URL retrievals with 'M-:' in an 'emacs -Q' run:
 
@@ -308,6 +308,11 @@ mail.gnu.org:443'
    Put the cursor on that line, and type 'd' to delete the process.  The
 attempted operation will now complete, usually without needing to retry
 it.
+
+   To debug OAuth 2.0 connections, it may be helpful to uncomment the
+'message' line in, then reevaluate, url-http-oauth-parse-grant.  Beware
+that this results in bearer and refresh tokens being output to the
+'*Messages*' buffer.
 
 
 File: excorporate.info,  Node: API Usage,  Next: Index,  Prev: Troubleshooting,  Up: Top
@@ -819,10 +824,10 @@ Node: Top1103
 Node: Reporting Bugs2517
 Node: Installation2841
 Node: Configuration3220
-Node: Usage5120
-Node: Troubleshooting8440
-Node: API Usage12123
-Node: Index29719
+Node: Usage5122
+Node: Troubleshooting8442
+Node: API Usage12360
+Node: Index29956
 
 End Tag Table
 

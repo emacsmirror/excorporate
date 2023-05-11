@@ -136,8 +136,8 @@ wizard by running:
 @noindent
 You will be prompted for the server configuration information.  Follow
 the prompts and if all goes well, you'll see a message in the
-minibuffer or in *Messages* saying that the connection is ready.
-Using the prompts, you can first try with autodiscovery.  If
+minibuffer or in @code{*Messages*} saying that the connection is
+ready.  Using the prompts, you can first try with autodiscovery.  If
 autodiscovery runs out of URLs to try, re-run @code{excorporate},
 saying 'n' to the autodiscovery attempt, at which point you will be
 asked for the EWS URL.
@@ -273,8 +273,8 @@ Before even attempting Excorporate, you have to make these succeed:
 @end example
 
 @noindent
-When this works, you'll see web page text in *Messages*, containing a
-message about having created a service.
+When this works, you'll see web page text in @code{*Messages*},
+containing a message about having created a service.
 
 @example
 (with-current-buffer
@@ -283,7 +283,8 @@ message about having created a service.
 @end example
 
 @noindent
-When this works, it will show a bunch of WSDL (XML) in *Messages*.
+When this works, it will show a bunch of WSDL (XML) in
+@code{*Messages*}.
 
 @noindent
 Debug the above URL retrievals with @code{M-:} in an @code{emacs -Q}
@@ -355,6 +356,11 @@ such lines.  They will look something like this:
 Put the cursor on that line, and type 'd' to delete the process.  The
 attempted operation will now complete, usually without needing to retry
 it.
+
+To debug OAuth 2.0 connections, it may be helpful to uncomment the
+@code{message} line in, then reevaluate, url-http-oauth--parse-grant.
+Beware that this results in bearer and refresh tokens being output to
+the @code{*Messages*} buffer.
 
 @node API Usage
 @chapter API Usage
