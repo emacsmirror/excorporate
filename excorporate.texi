@@ -358,9 +358,10 @@ attempted operation will now complete, usually without needing to retry
 it.
 
 To debug OAuth 2.0 connections, it may be helpful to uncomment the
-@code{message} line in, then reevaluate, url-http-oauth--parse-grant.
-Beware that this results in bearer and refresh tokens being output to
-the @code{*Messages*} buffer.
+@code{message} line in, then reevaluate,
+@code{url-http-oauth--parse-grant}.  Beware that this results in
+bearer and refresh tokens being output to the @code{*Messages*}
+buffer.
 
 @node API Usage
 @chapter API Usage

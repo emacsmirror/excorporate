@@ -310,9 +310,9 @@ attempted operation will now complete, usually without needing to retry
 it.
 
    To debug OAuth 2.0 connections, it may be helpful to uncomment the
-'message' line in, then reevaluate, url-http-oauth-parse-grant.  Beware
-that this results in bearer and refresh tokens being output to the
-'*Messages*' buffer.
+'message' line in, then reevaluate, 'url-http-oauth--parse-grant'.
+Beware that this results in bearer and refresh tokens being output to
+the '*Messages*' buffer.
 
 
 File: excorporate.info,  Node: API Usage,  Next: Index,  Prev: Troubleshooting,  Up: Top
@@ -826,8 +826,8 @@ Node: Installation2841
 Node: Configuration3220
 Node: Usage5122
 Node: Troubleshooting8442
-Node: API Usage12360
-Node: Index29956
+Node: API Usage12362
+Node: Index29958
 
 End Tag Table
 
