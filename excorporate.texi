@@ -119,13 +119,15 @@ name:/OAuth 2.0 setting value:}.)
 @noindent
 Adjust the OAuth 2.0 URL settings for your server.  How to discover
 these settings is not specified by the OAuth 2.0 specification and is
-out-of-scope for this manual.  Two fields you @emph{must} change are
-``client-identifier'' and ``login_hint''.  ``login_hint'' is the email
-address you use to sign in to the server.  How to obtain
-``client-identifier'' is not specified by the OAuth 2.0 specification
-and is out-of-scope for this manual, however an excellent overview is
-provided by the GNOME Wiki:
-@uref{https://wiki.gnome.org/Apps/Evolution/EWS/OAuth2}.
+out-of-scope for this manual.  The fields you @emph{must} change are
+``authorization-endpoint'', ``access-token-endpoint'',
+``client-identifier'' and ``login_hint''.  ``authorization-endpoint''
+and ``access-token-endpoint'' contain your organization's tenant
+identifier.  `login_hint'' is the email address you use to sign in to
+the server.  How to obtain the tenant identifier and client-identifier
+is not specified by the OAuth 2.0 specification and is out-of-scope
+for this manual, however an excellent overview is provided by the
+GNOME Wiki: @uref{https://wiki.gnome.org/Apps/Evolution/EWS/OAuth2}.
 
 @noindent
 For password authentication, you can try the minibuffer configuration

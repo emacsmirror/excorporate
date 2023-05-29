@@ -1236,12 +1236,12 @@ the \"mail address\", and the EWS URL as the \"service URL\"."
 	       ("authorization-endpoint"
 		(string :tag "Authorization URL"
 			,(concat "https://login.microsoftonline.com"
-				 "/ecdd899a-33be-4c33-91e4-1f1144fc2f56"
+				 "/YOUR_TENANT_IDENTIFIER"
 				 "/oauth2/authorize")))
 	       ("access-token-endpoint"
 		(string :tag "Access-token URL"
 			,(concat "https://login.microsoftonline.com"
-				 "/ecdd899a-33be-4c33-91e4-1f1144fc2f56"
+				 "/YOUR_TENANT_IDENTIFIER"
 				 "/oauth2/token")))
 	       ("client-identifier"
 		(string :tag "Client identifier"
@@ -1289,7 +1289,7 @@ the \"mail address\", and the EWS URL as the \"service URL\"."
 				 ("login_hint"
 				  (string
 				   :value
-				   "change-this-to-your-EWS-email-address"))
+				   "YOUR_EMAIL_ADDRESS"))
 				 ("prompt"
 				  (string :value "login"))
 				 ("redirect_uri"
