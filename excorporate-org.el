@@ -251,11 +251,19 @@ identifier."
 		      "TODO"
 		    "DONE")))
     (insert (format "** %s %s\n" keyword subject))
-    (org-schedule nil (format-time-string "<%Y-%m-%d %a %H:%M>"
-					  start-time))
-    (forward-line -1)
-    (end-of-line)
-    (insert  "--" (format-time-string "<%Y-%m-%d %a %H:%M>" end-time))
+    ;; If the meeting times are on the same day use a time period
+    ;; otherwise use a range of days.
+    (if (= (time-to-day-in-year start-time) (time-to-day-in-year end-time))
+	(org-schedule
+	 nil (format "<%s-%s>"
+		     (format-time-string "%Y-%m-%d %a %H:%M" start-time)
+		     (format-time-string "%H:%M" end-time)))
+      (progn
+        (org-schedule nil (format-time-string "<%Y-%m-%d %a %H:%M>"
+					      start-time))
+        (forward-line -1)
+        (end-of-line)
+        (insert  "--" (format-time-string "<%Y-%m-%d %a %H:%M>" end-time))))
     (forward-line)
     (org-set-property "Identifier" (format "%S" item-identifier))
     (org-insert-time-stamp (current-time) t t "+ Retrieved " "\n")))
